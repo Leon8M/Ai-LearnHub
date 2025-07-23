@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AddCourseDialog from './AddCourseDialog';
+import AdSlot from '@/components/ui/AdSlot';
 
 const SideOptions = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/workspace' },
@@ -29,6 +30,7 @@ const SideOptions = [
   { title: 'Explore Courses', icon: Compass, path: '/workspace/explore' },
   { title: 'How it works', icon: PencilRulerIcon, path: '/workspace/how-it-works' },
   { title: 'Profile', icon: UserCircle2Icon, path: '/workspace/profile' },
+  { title: 'Buy Tokens', icon: UserCircle2Icon, path: '/workspace/buy-tokens' },
 ];
 
 function MainSidebar() {
@@ -66,6 +68,12 @@ function MainSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+              <SidebarMenuItem>
+                <AdSlot 
+                  adClient={process.env.NEXT_PUBLIC_ADSENSE_ID}
+                  adSlot="5563136021"
+                    />
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
