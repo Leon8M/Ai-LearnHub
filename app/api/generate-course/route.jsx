@@ -1,5 +1,7 @@
+// app/api/generate-course/route.js
 import { NextResponse } from "next/server";
-import { ai } from "../generate-course-layout/route";
+// REMOVED: import { ai } from "../generate-course-layout/route"; // No longer needed
+import { getGeminiResponse } from "@/lib/geminiClient"; // ADDED: Import the helper
 import {
   coursesTable,
   tokenTransactionsTable,
@@ -64,11 +66,8 @@ export async function POST(request) {
           },
         ];
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.0-flash",
-          contents,
-          config: { responseMimeType: "text/plain" },
-        });
+        // CHANGED: Use the getGeminiResponse helper here
+        const response = await getGeminiResponse(contents); 
 
         const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         if (!rawText) throw new Error("Empty Gemini response");

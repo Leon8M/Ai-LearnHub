@@ -27,8 +27,7 @@ function Course() {
       const result = await axios.get('/api/enroll?courseId=' + courseId);
       let fetchedCourseInfo = result.data;
 
-      // --- CRITICAL FIX START ---
-      // Check if courseContent exists and is a string, then parse it
+      // Ensure courseContent is parsed if it's a string (Drizzle's JSON type can sometimes return stringified JSON)
       if (fetchedCourseInfo?.courses?.courseContent && typeof fetchedCourseInfo.courses.courseContent === 'string') {
         try {
           fetchedCourseInfo.courses.courseContent = JSON.parse(fetchedCourseInfo.courses.courseContent);
@@ -38,12 +37,10 @@ function Course() {
           fetchedCourseInfo.courses.courseContent = [];
         }
       }
-      // --- CRITICAL FIX END ---
-
       setCourseInfo(fetchedCourseInfo);
     } catch (error) {
       console.error("Error fetching enrolled course:", error);
-    
+      // Handle error gracefully, e.g., show a message to the user
     } finally {
       setLoading(false);
     }

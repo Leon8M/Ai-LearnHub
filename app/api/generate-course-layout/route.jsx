@@ -1,8 +1,9 @@
+// app/api/generate-course-layout/route.js
 import { db } from '@/config/db';
 import { coursesTable } from '@/config/schema';
-import { getGeminiResponse } from '@/lib/geminiClient';
+import { getGeminiResponse } from '@/lib/geminiClient'; // Keep this import
 import { currentUser } from "@clerk/nextjs/server";
-import { GoogleGenAI } from '@google/genai';
+// REMOVED: import { GoogleGenAI } from '@google/genai'; // No longer needed here
 import axios from 'axios';
 import { NextResponse } from 'next/server';
 
@@ -28,9 +29,8 @@ Schema: {
 }
 User Input:`;
 
-export const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+// REMOVED: export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
+// This was the problematic line. getGeminiResponse now handles AI instance creation.
 
 export async function POST(req) {
   const { courseId, ...formData } = await req.json();
@@ -44,6 +44,7 @@ export async function POST(req) {
       },
     ];
 
+    // Using the getGeminiResponse helper
     const result = await getGeminiResponse(contents);
 
     const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
