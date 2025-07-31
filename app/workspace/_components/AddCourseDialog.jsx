@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -60,83 +60,92 @@ function AddCourseDialog({ children }) {
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="backdrop-blur-sm bg-white/80 border border-neutral-200 shadow-xl max-w-lg rounded-xl p-6">
+      <DialogContent className="
+        backdrop-blur-md bg-[var(--card)]/90 border border-[var(--border)] shadow-2xl
+        rounded-2xl p-6 text-[var(--foreground)]
+        w-[95vw] md:max-w-lg max-h-[90vh] overflow-y-auto
+      ">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-neutral-800">
+          <DialogTitle className="text-2xl font-bold font-heading text-[var(--foreground)] mb-2">
             Generate New Course
           </DialogTitle>
           <DialogDescription asChild>
-            <div className="flex flex-col gap-5 mt-4 text-sm text-neutral-700">
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Course Name</label>
+            <div className="flex flex-col gap-6 mt-4 text-sm text-[var(--muted-foreground)]">
+              <div className="flex flex-col gap-2">
+                <label className="font-medium text-[var(--foreground)]">Course Name</label>
                 <Input
-                  placeholder="Enter course name"
+                  placeholder="Enter course name, e.g., 'Introduction to Quantum Physics'"
                   onChange={(e) => handleInputChange("name", e.target.value)}
+                  className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Course Description (optional)</label>
+              <div className="flex flex-col gap-2">
+                <label className="font-medium text-[var(--foreground)]">Course Description (optional)</label>
                 <Textarea
-                  placeholder="Enter course description"
+                  placeholder="Provide a brief description of what the course will cover."
                   onChange={(e) => handleInputChange("description", e.target.value)}
+                  className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Number of Chapters</label>
+              <div className="flex flex-col gap-2">
+                <label className="font-medium text-[var(--foreground)]">Number of Chapters</label>
                 <Input
                   type="number"
                   placeholder="e.g. 5"
                   onChange={(e) => handleInputChange("chapters", e.target.value)}
+                  className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
+                  min="1" 
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="font-medium">Include video lessons?</label>
+              <div className="flex items-center justify-between py-2">
+                <label className="font-medium text-[var(--foreground)]">Include video lessons?</label>
                 <Switch
                   checked={formData.includeVideo}
                   onCheckedChange={() =>
                     handleInputChange("includeVideo", !formData.includeVideo)
                   }
-                  className="switch-custom"
+                  className="switch-custom" 
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Difficulty Level</label>
+              <div className="flex flex-col gap-2">
+                <label className="font-medium text-[var(--foreground)]">Difficulty Level</label>
                 <Select onValueChange={(val) => handleInputChange("difficulty", val)}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]">
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
+                  <SelectContent className="bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
+                    <SelectItem value="beginner" className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]">Beginner</SelectItem>
+                    <SelectItem value="intermediate" className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]">Intermediate</SelectItem>
+                    <SelectItem value="advanced" className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Category</label>
+              <div className="flex flex-col gap-2">
+                <label className="font-medium text-[var(--foreground)]">Category</label>
                 <Input
-                  placeholder="e.g. Web Dev, AI, etc."
+                  placeholder="e.g. Web Dev, AI, History, Art"
                   onChange={(e) => handleInputChange("category", e.target.value)}
+                  className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4">
                 <Button
                   onClick={onGenerateCourse}
                   disabled={loading}
-                  className="gap-2"
+                  className="btn-primary gap-2 !text-base !h-12 !px-6" 
                 >
                   {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Sparkle className="w-4 h-4" />
+                    <Sparkle className="w-5 h-5" />
                   )}
-                  Generate Course
+                  {loading ? "Generating..." : "Generate Course"}
                 </Button>
               </div>
             </div>

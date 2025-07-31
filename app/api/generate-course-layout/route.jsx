@@ -1,9 +1,11 @@
 import { db } from '@/config/db';
 import { coursesTable } from '@/config/schema';
+import { getGeminiResponse } from '@/lib/geminiClient';
 import { currentUser } from "@clerk/nextjs/server";
 import { GoogleGenAI } from '@google/genai';
 import axios from 'axios';
 import { NextResponse } from 'next/server';
+
 
 const PROMPT = `Generate Learning Course based on the following details. Format as JSON only.
 Schema: {
@@ -42,11 +44,7 @@ export async function POST(req) {
       },
     ];
 
-    const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents,
-      generationConfig: { responseMimeType: "text/plain" },
-    });
+    const result = await getGeminiResponse(contents);
 
     const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!rawText) throw new Error("Empty Gemini response");

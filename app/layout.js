@@ -4,7 +4,12 @@ import { Provider } from "./provider";
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from "@/components/ui/sonner";
 import SyncClerkUser from "@/components/SyncClerkUser";
-import Script from "next/script"; // ✅ Import Script for next/head usage
+import Script from "next/script";
+
+
+// ✅ NEW FONTS
+import { Inter, Sora } from "next/font/google";
+import localFont from "next/font/local";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +21,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-brand",
+});
+
+// ✅ Custom logo font from Google: Unbounded
+const unbounded = localFont({
+  src: [
+    {
+      path: "../public/fonts/Unbounded-Bold.ttf", // make sure this file exists
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-unbounded",
+  display: "swap",
+});
+
 export const metadata = {
-  title: "AI LearnHub",
+  title: "Kamusi AI",
   description: "App for users to generate courses with AI and learn",
   icons: {
     icon: "/logo.svg",
@@ -29,7 +59,6 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <html lang="en">
         <head>
-          {/* ✅ Google AdSense script */}
           <Script
             async
             src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
@@ -41,7 +70,14 @@ export default function RootLayout({ children }) {
           </Script>
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`
+            ${geistSans.variable} 
+            ${geistMono.variable} 
+            ${inter.variable} 
+            ${sora.variable} 
+            ${unbounded.variable} 
+            font-sans antialiased
+          `}
         >
           <Provider>
             <SyncClerkUser />

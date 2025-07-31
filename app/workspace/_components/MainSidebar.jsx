@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   PencilRulerIcon,
   UserCircle2Icon,
+  Sparkles, // Added Sparkles for the "Create New Course" button
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -30,57 +31,60 @@ const SideOptions = [
   { title: 'Explore Courses', icon: Compass, path: '/workspace/explore' },
   { title: 'How it works', icon: PencilRulerIcon, path: '/workspace/how-it-works' },
   { title: 'Profile', icon: UserCircle2Icon, path: '/workspace/profile' },
-  { title: 'Buy Tokens', icon: UserCircle2Icon, path: '/workspace/buy-tokens' },
+  { title: 'Get Tokens', icon: UserCircle2Icon, path: '/workspace/buy-tokens' },
 ];
 
 function MainSidebar() {
   const path = usePathname();
 
   return (
-    <Sidebar className="bg-white border-r shadow-sm">
-      <SidebarHeader className="p-4">
+    <Sidebar className="bg-[var(--background)] border-r border-[var(--border)] shadow-md">
+      <SidebarHeader className="p-4 border-b border-[var(--border)]">
         <AddCourseDialog>
-          <Button className="w-full text-[15px]">Create New Course</Button>
+          <Button className="btn-primary w-full !text-base !h-12 !px-4 gap-2">
+            <Sparkles className="w-5 h-5" />
+            Create New Course
+          </Button>
         </AddCourseDialog>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="flex-grow py-4">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {SideOptions.map((option, index) => {
-                const active = path.includes(option.path);
+                const active = path === option.path || (option.path !== '/workspace' && path.startsWith(option.path));
                 return (
                   <SidebarMenuItem key={index}>
                     <SidebarMenuButton asChild>
                       <Link
                         href={option.path}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 text-[16px] ${
-                          active
-                            ? 'bg-gray-100 text-primary font-medium'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-[16px] 
+                          ${active
+                            ? 'bg-[var(--accent)] text-[var(--primary)] font-semibold shadow-sm' // Active state
+                            : 'text-[var(--foreground)] hover:bg-[var(--muted)] hover:text-[var(--primary)]' // Inactive state
+                          }`}
                       >
-                        <option.icon className="w-5 h-5" />
+                        <option.icon className={`w-5 h-5 ${active ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)] group-hover:text-[var(--primary)]'}`} />
                         <span>{option.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
-              <SidebarMenuItem>
+              <SidebarMenuItem className="mt-6"> {/* Added margin to separate AdSlot */}
                 <AdSlot 
                   adClient={process.env.NEXT_PUBLIC_ADSENSE_ID}
                   adSlot="5563136021"
-                    />
+                />
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} AI LearnHub
+      <SidebarFooter className="p-4 text-center text-sm text-[var(--muted-foreground)] border-t border-[var(--border)]">
+        © {new Date().getFullYear()} Kamusi.
       </SidebarFooter>
     </Sidebar>
   );
