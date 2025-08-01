@@ -1,80 +1,143 @@
 'use client';
-import { Lightbulb, BrainCog, Youtube, FileText, BookPlus, Rocket } from 'lucide-react';
+import { Lightbulb, BrainCog, Youtube, FileText, BookPlus, Rocket, Gem, HandCoins } from 'lucide-react'; // Added Gem and HandCoins
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { motion } from 'framer-motion'; // For subtle animations
 
 export default function HowItWorks() {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-primary mb-2">How AI LearnHub Works</h1>
-        <p className="text-gray-600 text-lg">
-          Learn how we use AI to generate smart, structured and engaging learning experiences.
-        </p>
-      </div>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 bg-[var(--background)] min-h-screen">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="text-center mb-12 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md p-8"
+      >
+        <motion.h1
+          variants={itemVariants}
+          className="text-4xl md:text-5xl font-extrabold font-heading text-[var(--foreground)] mb-4 animate-fade-in-down"
+        >
+          How <span className="kamusi-logo">Kamusi AI</span> Works
+        </motion.h1>
+        <motion.p
+          variants={itemVariants}
+          className="text-lg md:text-xl text-[var(--muted-foreground)] max-w-3xl mx-auto"
+        >
+          Unlock personalized learning experiences with the power of AI. Here's your step-by-step guide to generating incredible courses.
+        </motion.p>
+      </motion.div>
 
-      <div className="grid gap-10">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="grid gap-10"
+      >
         {/* Step 1: Create a Course */}
-        <div className="flex gap-6 items-start">
-          <BookPlus className="text-secondary min-w-[40px] h-10 w-10 mt-1" />
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex-shrink-0 bg-[var(--accent)] rounded-full p-3 flex items-center justify-center shadow-md">
+            <BookPlus className="text-[var(--primary)] h-8 w-8" />
+          </div>
           <div>
-            <h2 className="text-xl font-semibold mb-1">1. Create Your Course</h2>
-            <p className="text-gray-700">
-              Start by clicking the <span className="font-medium text-primary">"Create Course"</span> button on your dashboard. Provide a course name, a short description, your target audience, and the direction you'd like the course to take.
+            <h2 className="text-xl font-semibold font-heading text-[var(--foreground)] mb-2">1. Define Your Course Idea</h2>
+            <p className="text-[var(--muted-foreground)]">
+              Begin your journey by clicking the <span className="font-medium text-[var(--primary)]">"Create New Course"</span> button. You'll provide a course name, a brief description, target audience, and the desired direction. This initial input guides our AI.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Step 2: Generate First Draft */}
-        <div className="flex gap-6 items-start">
-          <BrainCog className="text-secondary min-w-[40px] h-10 w-10 mt-1" />
+        {/* Step 2: Token Requirement & Acquisition */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex-shrink-0 bg-[var(--accent)] rounded-full p-3 flex items-center justify-center shadow-md">
+            <Gem className="text-[var(--primary)] h-8 w-8" />
+          </div>
           <div>
-            <h2 className="text-xl font-semibold mb-1">2. Gemini Generates the Course Skeleton</h2>
-            <p className="text-gray-700">
-              Your input is sent to <strong>Gemini</strong> to generate the first draft of the course. This includes the <strong>core topics</strong>, an outline of the chapters, and an AI-proposed learning path.
+            <h2 className="text-xl font-semibold font-heading text-[var(--foreground)] mb-2">2. Tokens for Creation</h2>
+            <p className="text-[var(--muted-foreground)] mb-3">
+              Generating a comprehensive course requires **tokens**. Each course generation consumes one token. If you're out of tokens, don't worry!
+            </p>
+            <p className="text-[var(--muted-foreground)] flex items-center gap-2">
+              <HandCoins className="w-5 h-5 text-[var(--primary)]" />
+              Visit the <Link href="/workspace/buy-tokens" className="text-[var(--primary)] hover:underline font-medium">"Get Tokens"</Link> page. You can earn a new token by watching just two short ads.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Step 3: Generate Chapter Content */}
-        <div className="flex gap-6 items-start">
-          <FileText className="text-secondary min-w-[40px] h-10 w-10 mt-1" />
+        {/* Step 3: AI Generates Course Layout */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex-shrink-0 bg-[var(--accent)] rounded-full p-3 flex items-center justify-center shadow-md">
+            <BrainCog className="text-[var(--primary)] h-8 w-8" />
+          </div>
           <div>
-            <h2 className="text-xl font-semibold mb-1">3. Content Generation for Each Topic</h2>
-            <p className="text-gray-700">
-              Each topic is passed back into <strong>Gemini</strong> to generate full chapter content — including definitions, explanations, real-world examples, and step-by-step breakdowns.
+            <h2 className="text-xl font-semibold font-heading text-[var(--foreground)] mb-2">3. Kamusi AI Crafts the Course Skeleton</h2>
+            <p className="text-[var(--muted-foreground)]">
+              Your input is sent to the powerful **Gemini AI** to generate the initial course structure. This includes a detailed outline of chapters, key topics for each, estimated durations, and a compelling banner image prompt.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Step 4: YouTube API */}
-        <div className="flex gap-6 items-start">
-          <Youtube className="text-secondary min-w-[40px] h-10 w-10 mt-1" />
+        {/* Step 4: Deep Content Generation */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex-shrink-0 bg-[var(--accent)] rounded-full p-3 flex items-center justify-center shadow-md">
+            <FileText className="text-[var(--primary)] h-8 w-8" />
+          </div>
           <div>
-            <h2 className="text-xl font-semibold mb-1">4. Relevant YouTube Videos are Suggested</h2>
-            <p className="text-gray-700">
-              We send the chapter details to the <strong>YouTube API</strong> to fetch high-quality videos that match the learning goals. These are embedded into your course for multi-modal learning.
+            <h2 className="text-xl font-semibold font-heading text-[var(--foreground)] mb-2">4. Detailed Content for Every Topic</h2>
+            <p className="text-[var(--muted-foreground)]">
+              Once the skeleton is approved, each topic is individually processed by **Gemini AI** again. This step generates rich, comprehensive content, including definitions, explanations, practical examples, and step-by-step breakdowns, forming the core of your lessons.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Step 5: Ready to Learn */}
-        <div className="flex gap-6 items-start">
-          <Rocket className="text-secondary min-w-[40px] h-10 w-10 mt-1" />
+        {/* Step 5: Relevant YouTube Videos */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex-shrink-0 bg-[var(--accent)] rounded-full p-3 flex items-center justify-center shadow-md">
+            <Youtube className="text-[var(--primary)] h-8 w-8" />
+          </div>
           <div>
-            <h2 className="text-xl font-semibold mb-1">5. Learn, Share & Track</h2>
-            <p className="text-gray-700">
-              Once your course is ready, you can start learning, track your progress, and even share the course with others.
+            <h2 className="text-xl font-semibold font-heading text-[var(--foreground)] mb-2">5. Curated Video Resources</h2>
+            <p className="text-[var(--muted-foreground)]">
+              To enhance your multi-modal learning experience, we integrate with the **YouTube API**. For each chapter, we fetch high-quality, relevant video tutorials and lectures, embedding them directly into your course to provide diverse perspectives.
             </p>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      <div className="text-center mt-16">
+        {/* Step 6: Learn & Grow */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 items-start bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex-shrink-0 bg-[var(--accent)] rounded-full p-3 flex items-center justify-center shadow-md">
+            <Rocket className="text-[var(--primary)] h-8 w-8" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold font-heading text-[var(--foreground)] mb-2">6. Begin Your Learning Journey!</h2>
+            <p className="text-[var(--muted-foreground)]">
+              Your custom-generated course is now complete and ready! Dive into the content, track your progress, mark chapters as complete, and revisit topics anytime. Kamusi AI is your personalized learning companion.
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      <motion.div variants={itemVariants} className="text-center mt-16">
         <Link href="/workspace">
-          <Button size="lg" className="text-lg">Go to Workspace</Button>
+          <Button size="lg" className="btn-primary !text-lg !h-14 !px-8">
+            Go to My Workspace
+          </Button>
         </Link>
-      </div>
+      </motion.div>
     </div>
   );
 }
