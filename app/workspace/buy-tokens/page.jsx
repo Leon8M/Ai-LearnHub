@@ -8,7 +8,11 @@ import AdSlot from "@/components/ui/AdSlot"; // Assuming AdSlot component exists
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useSearchParams } from 'next/navigation';
-import PaystackPop from '@paystack/inline-js'; // Import Paystack Inline JS
+import dynamic from 'next/dynamic'; // Import dynamic from next/dynamic
+
+// Dynamically import PaystackPop with SSR disabled
+// This ensures PaystackPop is only loaded on the client-side, where 'window' is defined.
+const PaystackPop = dynamic(() => import('@paystack/inline-js'), { ssr: false });
 
 // Define token packages for purchase
 const TOKEN_PACKAGES = [
@@ -27,25 +31,28 @@ export default function EarnTokens() {
 
   // Sync with localStorage on component mount and handle payment redirects
   useEffect(() => {
-    const count = parseInt(localStorage.getItem("kamusi_adsWatched") || "0", 10);
-    setAdsWatched(count);
-    setEarned(false); 
+    // Check if window is defined before accessing localStorage
+    if (typeof window !== 'undefined') {
+      const count = parseInt(localStorage.getItem("kamusi_adsWatched") || "0", 10);
+      setAdsWatched(count);
+      setEarned(false); 
 
-    // Handle Paystack redirect status (from callback_url)
-    const status = searchParams.get('status');
-    const purchasedTokens = searchParams.get('tokens');
-    const reference = searchParams.get('reference');
+      // Handle Paystack redirect status (from callback_url)
+      const status = searchParams.get('status');
+      const purchasedTokens = searchParams.get('tokens');
+      const reference = searchParams.get('reference');
 
-    if (status === 'success' && purchasedTokens && reference) {
-      // For Paystack, the actual token update should happen via webhook for security.
-      // Here, we'll just show a success message based on the redirect.
-      // The webhook will handle the actual token credit.
-      toast.success(`🎉 Payment initiated successfully for ${purchasedTokens} tokens! Your tokens will be added shortly.`);
-      // Clear URL params to prevent re-triggering toast on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (status === 'cancelled') {
-      toast.error("Payment cancelled. No tokens were added.");
-      window.history.replaceState({}, document.title, window.location.pathname);
+      if (status === 'success' && purchasedTokens && reference) {
+        // For Paystack, the actual token update should happen via webhook for security.
+        // Here, we'll just show a success message based on the redirect.
+        // The webhook will handle the actual token credit.
+        toast.success(`🎉 Payment initiated successfully for ${purchasedTokens} tokens! Your tokens will be added shortly.`);
+        // Clear URL params to prevent re-triggering toast on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (status === 'cancelled') {
+        toast.error("Payment cancelled. No tokens were added.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     }
   }, [searchParams]);
 
@@ -53,7 +60,10 @@ export default function EarnTokens() {
   const handleAdWatched = useCallback(() => {
     setAdsWatched(prevCount => {
       const newCount = prevCount + 1;
-      localStorage.setItem("kamusi_adsWatched", newCount.toString());
+      // Check if window is defined before accessing localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("kamusi_adsWatched", newCount.toString());
+      }
       return newCount;
     });
   }, []);
@@ -73,7 +83,10 @@ export default function EarnTokens() {
       if (data.success) {
         toast.success("🎉 You’ve earned 1 token!");
         setEarned(true);
-        localStorage.setItem("kamusi_adsWatched", "0"); // Reset count after successful claim
+        // Check if window is defined before accessing localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("kamusi_adsWatched", "0"); // Reset count after successful claim
+        }
         setAdsWatched(0); // Update state to reflect reset
       } else {
         toast.error(data.error || "Something went wrong. Try again.");
@@ -113,7 +126,12 @@ export default function EarnTokens() {
       }
 
       // Redirect to Paystack's hosted page
-      window.location.href = data.authorization_url;
+      // Ensure PaystackPop is loaded before using it, although we are redirecting here
+      // The dynamic import handles the loading.
+      if (typeof window !== 'undefined') { // Guard for client-side execution
+        window.location.href = data.authorization_url;
+      }
+
 
     } catch (error) {
       console.error("Purchase initiation error:", error);
