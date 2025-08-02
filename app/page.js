@@ -10,8 +10,8 @@ import { Card } from "@/components/ui/card";
 const Glow = () => (
   <div className="absolute -z-10 top-1/2 left-1/2 w-[80vw] h-[80vw] max-w-[500px] max-h-[500px] -translate-x-1/2 -translate-y-1/2">
     {/* Adjusted blur and opacity for a more encompassing glow */}
-    <div className="absolute w-full h-full bg-[var(--primary)] rounded-full blur-[100px] md:blur-[150px] animate-pulse opacity-20" />
-    <div className="absolute w-3/4 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--secondary)] rounded-full blur-[70px] md:blur-[100px] animate-pulse animation-delay-2000 opacity-25" />
+    <div className="absolute w-full h-full bg-[var(--primary)] rounded-full blur-[80px] md:blur-[120px] animate-pulse opacity-15" /> {/* Reduced blur and opacity */}
+    <div className="absolute w-3/4 h-3/4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--secondary)] rounded-full blur-[50px] md:blur-[80px] animate-pulse animation-delay-2000 opacity-20" /> {/* Reduced blur and opacity */}
   </div>
 );
 
@@ -51,18 +51,16 @@ export default function Home() {
       >
         <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 py-3"> {/* Adjusted px for smaller screens */}
           <Link href="/">
-            {/* Using the actual logo image with dynamic size and a more pronounced "holo" effect */}
             <div className="relative">
               <img 
                 src="/logo-main.png" 
                 alt="Kamusi Logo"
                 // Dynamic height: h-12 on small, h-16 on medium, h-20 on large
                 className="h-12 sm:h-16 md:h-20 w-auto relative z-10 transition-transform duration-300 hover:scale-105 
-                           drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] brightness-[1.2] saturate-150" 
+                           drop-shadow-[0_0_20px_rgba(255,255,255,0.5)] brightness-[1.1] saturate-125" // Reduced drop-shadow blur/opacity/brightness/saturate
               />
               {/* Adjusted blur and opacity for a more encompassing glow */}
-              {/* This glow is relative to the image wrapper, so its size will scale with the image */}
-              <div className="absolute inset-0 z-0 blur-[80px] rounded-full bg-[oklch(0.75_0.2_280/_0.4)]" />
+              <div className="absolute inset-0 z-0 blur-[60px] rounded-full bg-[oklch(0.75_0.2_280/_0.2)]" /> {/* Reduced blur and opacity */}
             </div>
           </Link>
           <div className="flex items-center gap-3 sm:gap-4"> {/* Adjusted gap for smaller screens */}
