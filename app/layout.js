@@ -50,7 +50,7 @@ export const metadata = {
   title: "Kamusi AI",
   description: "App for users to generate courses with AI and learn",
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo-main.png",
   },
 };
 
