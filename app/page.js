@@ -82,8 +82,8 @@ export default function Home() {
       <section className="relative container mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 pt-24 pb-12 md:pt-32 md:pb-16 gap-8 lg:gap-12"> {/* Adjusted padding and gap */}
         <Glow />
         <div className="lg:w-1/2 text-center lg:text-left animate-fade-in-up">
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-4 md:mb-6 !leading-tight font-heading"> {/* Adjusted mb */}
-            From Curiosity to<br/> <span className="kamusi-logo !text-5xl md:!text-7xl">Competence.</span> Instantly.
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-4 md:mb-6 !leading-tight font-heading"> {/* Adjusted text size for smaller screens */}
+            From Curiosity to<br/> <span className="kamusi-logo !text-4xl sm:!text-5xl md:!text-7xl">Competence.</span> Instantly. {/* Adjusted text size for smaller screens */}
           </h1>
           <p className="text-base md:text-lg text-muted-foreground mb-6 md:mb-8 max-w-xl mx-auto lg:mx-0"> {/* Adjusted text size and mb */}
             Stop searching, start learning. Kamusi uses AI to build structured, personalized courses on any topic you can imagine. Your journey to mastery begins now.
