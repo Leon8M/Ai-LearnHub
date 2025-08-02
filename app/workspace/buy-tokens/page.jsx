@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react"; // Import Suspense
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, BadgeCheck, Gem, Loader2, HandCoins, CreditCard } from "lucide-react";
@@ -22,12 +22,13 @@ const TOKEN_PACKAGES = [
   { id: 'master', tokens: 30, price: 500, label: 'Master Pack', description: 'Unlock extensive learning and creation.' },
 ];
 
-export default function EarnTokens() {
+// Create a separate component to wrap with Suspense
+function EarnTokensContent() {
   const [adsWatched, setAdsWatched] = useState(0);
   const [loading, setLoading] = useState(false); // For ad-watching claim button
   const [earned, setEarned] = useState(false); // For ad-watching claim success
   const [purchaseLoading, setPurchaseLoading] = useState(false); // For purchase buttons
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // This hook is now safely inside a client-side component
 
   // Sync with localStorage on component mount and handle payment redirects
   useEffect(() => {
@@ -126,8 +127,6 @@ export default function EarnTokens() {
       }
 
       // Redirect to Paystack's hosted page
-      // Ensure PaystackPop is loaded before using it, although we are redirecting here
-      // The dynamic import handles the loading.
       if (typeof window !== 'undefined') { // Guard for client-side execution
         window.location.href = data.authorization_url;
       }
@@ -291,5 +290,14 @@ export default function EarnTokens() {
         </div>
       </section>
     </div>
+  );
+}
+
+// The default export now wraps the content in a Suspense boundary
+export default function EarnTokensPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading tokens page...</div>}> {/* You can customize the fallback */}
+      <EarnTokensContent />
+    </Suspense>
   );
 }
