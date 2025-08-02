@@ -5,12 +5,14 @@ import { toast } from 'sonner'; // Assuming sonner is configured
 import axios from 'axios';
 import Image from 'next/image';
 import Link from 'next/link';
-import { BookOpen, PlayCircle, PenTool, Loader2 } from 'lucide-react'; // Imported Loader2
+import { BookOpen, PlayCircle, PenTool, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 function CourseCard({ course }) {
   const courseJson = course?.courseJson?.course;
   const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Initialize useRouter
 
   const onEnroll = async () => {
     setLoading(true);
@@ -21,15 +23,19 @@ function CourseCard({ course }) {
 
       if (result.data?.alreadyEnrolled) {
         toast.warning("You are already enrolled in this course.");
+        // Even if already enrolled, we might want to redirect them to the course
+        router.push(`/course/${course?.cid}`); 
         return;
       }
 
       toast.success("Successfully enrolled!");
-      // Consider triggering a refresh of the EnrolledCourseList here
-      // if it's not handled by a global state or polling.
+      // Redirect to the course page after successful enrollment
+      router.push(`/course/${course?.cid}`); 
+
     } catch (error) {
       console.error("Failed to enroll:", error);
-      toast.error("Failed to enroll. Please try again.");
+      // Display the error message from the backend if available
+      toast.error(error.response?.data?.error || "Failed to enroll. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,7 +73,7 @@ function CourseCard({ course }) {
 
         <div className="flex items-center justify-between pt-3">
           <span className="flex items-center text-[var(--muted-foreground)] text-sm gap-1">
-            <BookOpen className="w-4 h-4 text-[var(--primary)]" /> {/* Icon colored with primary */}
+            <BookOpen className="w-4 h-4 text-[var(--primary)]" />
             {courseJson?.NoOfChapters || 0} Chapters
           </span>
 
@@ -76,7 +82,7 @@ function CourseCard({ course }) {
               size="sm"
               onClick={onEnroll}
               disabled={loading}
-              className="btn-primary gap-1" // Applied btn-primary
+              className="btn-primary gap-1"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -87,7 +93,7 @@ function CourseCard({ course }) {
             </Button>
           ) : (
             <Link href={`/workspace/edit-course/${course?.cid}`}>
-              <Button size="sm" variant="outline" className="gap-1 border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary-foreground)]"> {/* Styled outline button */}
+              <Button size="sm" variant="outline" className="gap-1 border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary-foreground)]">
                 <PenTool className="w-4 h-4" />
                 Generate It!
               </Button>
