@@ -3,41 +3,38 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { Book, Clock, PlayIcon, Sparkle, TrendingUp, Loader2 } from 'lucide-react';
-import Image from 'next/image';
+// Removed: import Image from 'next/image'; // No longer needed
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import CategoryIconCard from '../../_components/CategoryIconCard';
+
 
 function Courseinfo({ course, viewCourse }) {
   const courseLayout = course?.courseJson?.course;
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Calculate total duration by summing individual chapter durations
   const calculateTotalDuration = () => {
     let totalMinutes = 0;
     if (courseLayout?.chapters && Array.isArray(courseLayout.chapters)) {
       courseLayout.chapters.forEach(chapter => {
-        const durationStr = chapter.duration ? String(chapter.duration).toLowerCase() : ''; // Ensure string and lowercase
+        const durationStr = chapter.duration ? String(chapter.duration).toLowerCase() : '';
         if (durationStr) {
           let chapterMinutes = 0;
 
-          // Case 1: "X hours" or "X hr" (including decimals like "1.5 hours")
           const hoursMatch = durationStr.match(/(\d+(\.\d+)?)\s*(hr|hour|hours)/);
           if (hoursMatch) {
             const hours = parseFloat(hoursMatch[1]);
             chapterMinutes += hours * 60;
           }
 
-          // Case 2: "X min" or "X minutes"
           const minutesMatch = durationStr.match(/(\d+)\s*(min|minute|minutes)/);
           if (minutesMatch) {
             const minutes = parseInt(minutesMatch[1], 10);
             chapterMinutes += minutes;
           }
           
-          // Fallback: If only a number is provided without units, assume minutes (e.g., "60" for 60 minutes)
-          // Only apply this if no hours or minutes units were explicitly found and parsed
           if (chapterMinutes === 0 && !hoursMatch && !minutesMatch) {
               const numberOnlyMatch = durationStr.match(/^(\d+)$/);
               if (numberOnlyMatch) {
@@ -84,21 +81,12 @@ function Courseinfo({ course, viewCourse }) {
 
   return (
     <div className="flex flex-col md:flex-row gap-6 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md overflow-hidden p-6">
+      {/* Conditionally render CategoryIconCard */}
       {course?.bannerImageUrl && (
-        <div className="md:w-1/2 w-full relative h-64 rounded-lg overflow-hidden bg-[var(--muted)] flex items-center justify-center">
-          <Image
-            src={course?.bannerImageUrl}
-            alt={course?.name || 'Course banner'}
-            width={800}
-            height={300}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "https://placehold.co/800x300/cccccc/333333?text=No+Image";
-              e.target.alt = "Image not available";
-            }}
-          />
-        </div>
+        <CategoryIconCard
+          category={course?.bannerImageUrl || courseLayout?.category || 'Default'} // Use bannerImageUrl (which is now category) or fallback
+          className="md:w-1/2 w-full relative h-64 rounded-lg overflow-hidden" // Maintain existing image container styling
+        />
       )}
 
       <div className="flex flex-col gap-4 md:w-1/2 w-full justify-between">

@@ -1,21 +1,20 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import Image from 'next/image';
+// Removed: import Image from 'next/image'; // No longer needed
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { XCircle, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import axios from 'axios';
+import CategoryIconCard from './CategoryIconCard';
 
-function EnrolledCard({ course, enrollCourse, refreshList }) { // Accept refreshList prop
+function EnrolledCard({ course, enrollCourse, refreshList }) {
   const courseJson = course?.courseJson?.course;
-  const [unenrollLoading, setUnenrollLoading] = useState(false); // New loading state for unenroll button
+  const [unenrollLoading, setUnenrollLoading] = useState(false);
 
-  // Calculate progress as percentage
   const calcProgress = () => {
-    // Ensure courseContent is parsed if it's a string
     let parsedCourseContent = course?.courseContent;
     if (typeof parsedCourseContent === 'string') {
       try {
@@ -26,7 +25,7 @@ function EnrolledCard({ course, enrollCourse, refreshList }) { // Accept refresh
       }
     }
 
-    const totalChapters = parsedCourseContent?.length || 1; // Avoid division by zero
+    const totalChapters = parsedCourseContent?.length || 1;
     const completed = enrollCourse?.completedChapters?.length || 0;
     return totalChapters > 0 ? ((completed / totalChapters) * 100) : 0;
   };
@@ -34,24 +33,25 @@ function EnrolledCard({ course, enrollCourse, refreshList }) { // Accept refresh
   const progressValue = calcProgress();
 
   const handleUnenroll = async (e) => {
-    e.stopPropagation(); // Prevent Link from triggering if button is inside a Link
-    e.preventDefault(); // Prevent default button behavior (e.g., form submission)
+    e.stopPropagation();
+    e.preventDefault();
 
     // IMPORTANT: Replace this with a custom modal for better UX in production
-    if (!confirm("Are you sure you want to unenroll from this course? This action cannot be undone.")) {
+    // For now, using a simple alert as per previous instructions.
+    if (!window.confirm("Are you sure you want to unenroll from this course? This action cannot be undone.")) {
       return;
     }
 
     setUnenrollLoading(true);
     try {
       const response = await axios.delete('/api/enroll', {
-        data: { courseId: course?.cid } // DELETE requests with body need 'data' key in axios
+        data: { courseId: course?.cid }
       });
 
       if (response.data.success) {
         toast.success("Successfully unenrolled from the course!");
         if (refreshList) {
-          refreshList(); // Trigger refresh of the enrolled courses list
+          refreshList();
         }
       } else {
         toast.error(response.data.error || "Failed to unenroll. Please try again.");
@@ -65,13 +65,12 @@ function EnrolledCard({ course, enrollCourse, refreshList }) { // Accept refresh
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3 relative"> {/* Added relative for absolute positioning */}
-      {/* Unenroll Button with Tooltip */}
+    <div className="bg-[var(--card)] border border-[var(--border)] p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3 relative">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="ghost" // Use ghost variant for a subtle button
-            size="icon" // Make it a small icon button
+            variant="ghost"
+            size="icon"
             className="absolute top-2 right-2 z-10 rounded-full bg-[var(--background)]/80 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)] transition-colors duration-200"
             onClick={handleUnenroll}
             disabled={unenrollLoading}
@@ -88,25 +87,11 @@ function EnrolledCard({ course, enrollCourse, refreshList }) { // Accept refresh
         </TooltipContent>
       </Tooltip>
 
-      {/* Image with fallback */}
-      <div className="relative w-full h-44 rounded-lg overflow-hidden bg-[var(--muted)] flex items-center justify-center">
-        {course?.bannerImageUrl ? (
-          <Image
-            src={course.bannerImageUrl}
-            alt={course?.name || "Course Banner"}
-            width={300}
-            height={200}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "https://placehold.co/300x200/cccccc/333333?text=No+Image";
-              e.target.alt = "Image not available";
-            }}
-          />
-        ) : (
-          <span className="text-[var(--muted-foreground)] text-sm">No Image Available</span>
-        )}
-      </div>
+      {/* Replaced Image with CategoryIconCard */}
+      <CategoryIconCard 
+        category={course?.bannerImageUrl || courseJson?.category || 'Default'} // Use bannerImageUrl (which is now category) or fallback
+        className="w-full h-44 rounded-lg overflow-hidden" // Maintain existing image container styling
+      />
 
       <div className="flex flex-col gap-2 px-1">
         <h2 className="text-lg font-bold text-[var(--foreground)] font-heading">{courseJson?.name || "Untitled Course"}</h2>
