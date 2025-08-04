@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { Book, Clock, PlayIcon, Sparkle, TrendingUp, Loader2 } from 'lucide-react';
-// Removed: import Image from 'next/image'; // No longer needed
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -15,6 +14,7 @@ function Courseinfo({ course, viewCourse }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Function to calculate total duration of the course
   const calculateTotalDuration = () => {
     let totalMinutes = 0;
     if (courseLayout?.chapters && Array.isArray(courseLayout.chapters)) {
@@ -61,6 +61,7 @@ function Courseinfo({ course, viewCourse }) {
     }
   };
 
+  // Function to generate course content
   const GenerateContent = async () => {
     setLoading(true);
     try {
@@ -84,8 +85,8 @@ function Courseinfo({ course, viewCourse }) {
       {/* Conditionally render CategoryIconCard */}
       {course?.bannerImageUrl && (
         <CategoryIconCard
-          category={course?.bannerImageUrl || courseLayout?.category || 'Default'} // Use bannerImageUrl (which is now category) or fallback
-          className="md:w-1/2 w-full relative h-64 rounded-lg overflow-hidden" // Maintain existing image container styling
+          category={course?.bannerImageUrl || courseLayout?.category || 'Default'} 
+          className="md:w-1/2 w-full relative h-64 rounded-lg overflow-hidden" 
         />
       )}
 

@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
-// Removed: import Image from 'next/image'; // No longer needed for category icons
 import Link from 'next/link';
 import { BookOpen, PlayCircle, PenTool, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -16,6 +15,7 @@ function CourseCard({ course }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Function to calculate total duration of the course
   const onEnroll = async () => {
     setLoading(true);
     try {
@@ -48,8 +48,8 @@ function CourseCard({ course }) {
     >
       {/* Replaced Image with CategoryIconCard */}
       <CategoryIconCard 
-        category={course?.bannerImageUrl || courseJson?.category || 'Default'} // Use bannerImageUrl (which is now category) or fallback
-        className="w-full h-44 rounded-t-xl overflow-hidden" // Maintain existing image container styling
+        category={course?.bannerImageUrl || courseJson?.category || 'Default'}
+        className="w-full h-44 rounded-t-xl overflow-hidden" 
       />
 
       <div className="p-4 space-y-3">

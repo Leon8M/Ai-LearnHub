@@ -1,7 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-// Removed: import Image from 'next/image'; // No longer needed
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { XCircle, Loader2 } from 'lucide-react';
@@ -14,6 +13,7 @@ function EnrolledCard({ course, enrollCourse, refreshList }) {
   const courseJson = course?.courseJson?.course;
   const [unenrollLoading, setUnenrollLoading] = useState(false);
 
+  // Function to calculate progress percentage
   const calcProgress = () => {
     let parsedCourseContent = course?.courseContent;
     if (typeof parsedCourseContent === 'string') {
@@ -32,12 +32,11 @@ function EnrolledCard({ course, enrollCourse, refreshList }) {
 
   const progressValue = calcProgress();
 
+  // Function to handle unenrollment
   const handleUnenroll = async (e) => {
     e.stopPropagation();
     e.preventDefault();
 
-    // IMPORTANT: Replace this with a custom modal for better UX in production
-    // For now, using a simple alert as per previous instructions.
     if (!window.confirm("Are you sure you want to unenroll from this course? This action cannot be undone.")) {
       return;
     }

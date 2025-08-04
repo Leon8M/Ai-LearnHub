@@ -267,14 +267,13 @@ const getCategoryIconAndColors = (categoryString) => {
   let colors = categoryColorMap['Default'];
 
   for (const cat of categories) {
-    // Find the closest match, case-insensitive
     const matchedCategory = Object.keys(categoryIconMap).find(key => 
       key.toLowerCase() === cat.toLowerCase()
     );
     if (matchedCategory) {
       IconComponent = categoryIconMap[matchedCategory];
       colors = categoryColorMap[matchedCategory];
-      break; // Use the first matched category
+      break; 
     }
   }
 
