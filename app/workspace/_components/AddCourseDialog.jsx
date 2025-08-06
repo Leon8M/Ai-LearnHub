@@ -28,7 +28,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { cn } from "@/lib/utils";
 
 // --- Import CATEGORIES from external file ---
-import { CATEGORIES } from '@/constants/categories';
+import { CATEGORIES } from '@/constants/categories'; // Ensure this path is correct
 
 // Define suggested chapter options
 const CHAPTER_OPTIONS = [
@@ -50,15 +50,13 @@ function AddCourseDialog({ children }) {
     category: "", // This will be the comma-separated string
   });
 
-  // State for chapters dropdown and custom input
   const [selectedChapterOption, setSelectedChapterOption] = useState('');
   const [customChapters, setCustomChapters] = useState('');
 
-  // State for category multi-select combobox
   const [openCategoryCombobox, setOpenCategoryCombobox] = useState(false);
-  const [categoryInputSearch, setCategoryInputSearch] = useState(''); // For the CommandInput
-  const [selectedCategories, setSelectedCategories] = useState([]); // Array of selected categories
-  const [customCategoryValue, setCustomCategoryValue] = useState(''); // For the "Other" input
+  const [categoryInputSearch, setCategoryInputSearch] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [customCategoryValue, setCustomCategoryValue] = useState('');
 
   // Effect to update formData.chapters
   useEffect(() => {
@@ -101,7 +99,8 @@ function AddCourseDialog({ children }) {
     } else {
       // If "Other" is selected, clear all standard selections
       setSelectedCategories([]);
-      setCustomCategoryValue(''); // Ensure custom input is clear for new entry
+      // customCategoryValue will be set by the CommandItem's onSelect
+      // setCustomCategoryValue(''); // Ensure custom input is clear for new entry
       setOpenCategoryCombobox(false); // Close popover to focus on custom input
     }
   }, []);
@@ -116,9 +115,9 @@ function AddCourseDialog({ children }) {
     }
   }, [customCategoryValue]);
 
-  // Filtered categories for the Command component
-  const filteredCategories = CATEGORIES.filter(category =>
-    category.toLowerCase().includes(categoryInputSearch.toLowerCase())
+  // Determine if the current search input matches any existing category
+  const isSearchMatchingExistingCategory = CATEGORIES.some(cat =>
+    cat.toLowerCase() === categoryInputSearch.toLowerCase().trim()
   );
 
   const onGenerateCourse = async () => {
@@ -296,17 +295,17 @@ function AddCourseDialog({ children }) {
                     <Command className="bg-[var(--popover)]">
                       <CommandInput
                         placeholder="Search category..."
-                        value={categoryInputSearch} // Ensure value is bound to state
-                        onValueChange={setCategoryInputSearch} // Ensure onValueChange updates state
+                        value={categoryInputSearch}
+                        onValueChange={setCategoryInputSearch}
                         className="h-9 bg-[var(--input)] border-b border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                       />
                       <CommandEmpty className="py-4 text-center text-[var(--muted-foreground)]">No category found.</CommandEmpty>
-                      <CommandGroup>
-                        {/* Filter using the categoryInputSearch state */}
-                        {filteredCategories.map((category) => (
+                      {/* Added max-h-48 (or similar) and overflow-y-auto to CommandGroup for internal scrolling */}
+                      <CommandGroup className="max-h-[calc(var(--radix-popover-content-available-height) - 40px)] overflow-y-auto">
+                        {CATEGORIES.map((category) => ( // Iterate over ALL CATEGORIES, let Command handle filtering
                           <CommandItem
                             key={category}
-                            value={category}
+                            value={category} // Value is used by Command for filtering
                             onSelect={() => handleCategorySelect(category)}
                             className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer"
                           >
@@ -319,20 +318,23 @@ function AddCourseDialog({ children }) {
                             {category}
                           </CommandItem>
                         ))}
-                        {/* Show "Other" option only if no predefined categories match the search */}
-                        {categoryInputSearch.trim() !== '' && !CATEGORIES.some(cat => cat.toLowerCase().includes(categoryInputSearch.toLowerCase())) && (
+                        {/* Show "Add Custom" option only if search term is not empty AND it doesn't match an existing category */}
+                        {categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory && (
                           <CommandItem
-                            value="Other"
+                            value={`Add ${categoryInputSearch.trim()}`} // Unique value for command search
                             onSelect={() => {
-                              handleCategorySelect("Other");
-                              setCustomCategoryValue(categoryInputSearch.trim()); // Pre-fill custom input with search term
+                              // Set the custom value and handle selection
+                              setCustomCategoryValue(categoryInputSearch.trim());
+                              setSelectedCategories([]); // Clear standard selections
+                              setOpenCategoryCombobox(false); // Close popover
+                              setCategoryInputSearch(''); // Clear search input
                             }}
-                            className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer font-semibold text-[var(--primary)]"
+                            className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer font-semibold text-[var(--primary)] mt-1" // Added mt-1 for slight separation
                           >
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                customCategoryValue.toLowerCase() === categoryInputSearch.toLowerCase() && selectedCategories.length === 0 ? "opacity-100" : "opacity-0"
+                                customCategoryValue.toLowerCase() === categoryInputSearch.toLowerCase().trim() && selectedCategories.length === 0 ? "opacity-100" : "opacity-0"
                               )}
                             />
                             Add "{categoryInputSearch.trim()}" as Custom
@@ -342,14 +344,14 @@ function AddCourseDialog({ children }) {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                {/* Custom Category Input: Only show if "Other" was selected or if a custom value exists and no standard categories are selected */}
-                {(selectedCategories.length === 0 && (customCategoryValue.trim() || openCategoryCombobox && categoryInputSearch.trim() !== '' && !CATEGORIES.some(cat => cat.toLowerCase().includes(categoryInputSearch.toLowerCase())))) && (
+                {/* Custom Category Input: Only show if NO standard categories are selected AND a custom value exists or is being typed */}
+                {selectedCategories.length === 0 && (customCategoryValue.trim() || (openCategoryCombobox && categoryInputSearch.trim() !== '' && !isSearchMatchingExistingExistingCategory)) && (
                   <Input
                     placeholder="Enter custom category"
                     value={customCategoryValue}
                     onChange={(e) => setCustomCategoryValue(e.target.value)}
                     className="mt-2 bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
-                    required={selectedCategories.length === 0 && !customCategoryValue.trim()} // Required if no standard categories AND no custom value
+                    required={selectedCategories.length === 0 && !customCategoryValue.trim()}
                   />
                 )}
               </div>
