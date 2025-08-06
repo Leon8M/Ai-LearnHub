@@ -345,7 +345,7 @@ function AddCourseDialog({ children }) {
                   </PopoverContent>
                 </Popover>
                 {/* Custom Category Input: Only show if NO standard categories are selected AND a custom value exists or is being typed */}
-                {selectedCategories.length === 0 && (customCategoryValue.trim() || (openCategoryCombobox && categoryInputSearch.trim() !== '' && !isSearchMatchingExistingExistingCategory)) && (
+                {selectedCategories.length === 0 && (customCategoryValue.trim() || (openCategoryCombobox && categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory)) && (
                   <Input
                     placeholder="Enter custom category"
                     value={customCategoryValue}
