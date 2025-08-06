@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@clerk/nextjs';
 import axios from 'axios';
-import { Search, Sparkles, Loader2 } from 'lucide-react'; // Changed SearchCode to Search, added Loader2
-import React, { useEffect, useState, useCallback } from 'react'; // Added useCallback
+import { Search, Sparkles, Loader2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
 import CourseCard from '../_components/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton'; // Keeping import for reference, replaced with custom skeleton
 
@@ -12,22 +12,41 @@ function Explore() {
   const [courseList, setCourseList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCourses, setFilteredCourses] = useState([]);
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true);
   const { user } = useUser();
 
   const GetCourseList = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/courses?courseId=all');
+      const response = await axios.get('/api/courses?courseId=all'); 
+
+      if (!response.data || response.data.length === 0) {
+        console.warn("API returned no courses or empty data.");
+        setCourseList([]);
+        setFilteredCourses([]);
+        return; // Exit early if no data
+      }
       
-      // Process courseContent if it's a string (from Drizzle's JSON type)
       const processedCourses = response.data.map(course => {
+        // --- FIX START: Parse courseJson if it's a string ---
+        if (course.courseJson && typeof course.courseJson === 'string') {
+          try {
+            course.courseJson = JSON.parse(course.courseJson);
+          } catch (e) {
+            console.error("Failed to parse courseJson for course:", course.cid, e);
+            course.courseJson = {}; // Fallback to an empty object
+          }
+        }
+        // --- FIX END ---
+
+        // Process courseContent if it's a string (from Drizzle's JSON type)
+        // This part was already good, ensuring courseContent is an array/object
         if (course.courseContent && typeof course.courseContent === 'string') {
           try {
             course.courseContent = JSON.parse(course.courseContent);
           } catch (e) {
             console.error("Failed to parse courseContent for course:", course.cid, e);
-            course.courseContent = []; // Fallback
+            course.courseContent = []; // Fallback to an empty array
           }
         }
         return course;
@@ -37,17 +56,17 @@ function Explore() {
       setFilteredCourses(processedCourses); // Initialize filtered list with all courses
     } catch (error) {
       console.error('Failed to fetch course list', error);
-      // Handle error display
+      // You might want to add a toast.error here for user feedback
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array means this function is stable and won't recreate
+  }, []);
 
   useEffect(() => {
     if (user) {
       GetCourseList();
     }
-  }, [user, GetCourseList]); // Add GetCourseList to dependencies
+  }, [user, GetCourseList]);
 
   // Improved Search Algorithm
   const handleSearch = useCallback(() => {
@@ -57,10 +76,11 @@ function Explore() {
       return;
     }
 
-    const searchWords = trimmedSearchTerm.split(/\s+/).filter(Boolean); // Split by space, remove empty strings
+    const searchWords = trimmedSearchTerm.split(/\s+/).filter(Boolean);
 
     const scoredCourses = courseList.map(course => {
       let score = 0;
+      // Access courseJson.course properties directly after ensuring courseJson is parsed
       const courseName = course?.courseJson?.course?.name?.toLowerCase() || '';
       const courseDescription = course?.courseJson?.course?.description?.toLowerCase() || '';
       const courseCategory = course?.courseJson?.course?.category?.toLowerCase() || '';
@@ -68,15 +88,12 @@ function Explore() {
       let chapterTopicsContent = '';
       if (course?.courseContent && Array.isArray(course.courseContent)) {
         course.courseContent.forEach(chapterWrapper => {
-          // Access the actual chapter data within the 'value' property
           const chapterData = chapterWrapper?.value?.courseData; 
           if (chapterData) {
             chapterTopicsContent += (chapterData.chapterName?.toLowerCase() || '') + ' ';
             if (chapterData.topics && Array.isArray(chapterData.topics)) {
               chapterData.topics.forEach(topic => {
                 chapterTopicsContent += (topic?.topic?.toLowerCase() || '') + ' ';
-                // Optionally, include topic content if you want to search within the actual lesson text
-                // chapterTopicsContent += (topic?.content?.toLowerCase() || '') + ' '; 
               });
             }
           }
@@ -84,24 +101,23 @@ function Explore() {
       }
 
       searchWords.forEach(word => {
-        if (courseName.includes(word)) score += 5; // Higher score for name match
+        if (courseName.includes(word)) score += 5;
         if (courseDescription.includes(word)) score += 3;
         if (courseCategory.includes(word)) score += 4;
-        if (chapterTopicsContent.includes(word)) score += 2; // Score for chapter/topic match
+        if (chapterTopicsContent.includes(word)) score += 2;
       });
 
       return { course, score };
-    }).filter(item => item.score > 0) // Only keep courses that have at least one match
-      .sort((a, b) => b.score - a.score); // Sort by score descending
+    }).filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
 
     setFilteredCourses(scoredCourses.map(item => item.course));
-  }, [searchTerm, courseList]); // Re-run if searchTerm or courseList changes
+  }, [searchTerm, courseList]);
 
-  // Trigger search when searchTerm changes (debounced if needed for performance on large lists)
   useEffect(() => {
     const handler = setTimeout(() => {
       handleSearch();
-    }, 300); // Debounce search by 300ms
+    }, 300);
 
     return () => {
       clearTimeout(handler);
@@ -112,10 +128,9 @@ function Explore() {
     <div className="p-4 sm:p-6 bg-[var(--background)] min-h-screen">
       <div className="flex flex-col sm:flex-row items-center justify-between mb-6 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md p-6">
         <h2 className="text-2xl sm:text-3xl font-bold font-heading flex items-center gap-2 text-[var(--foreground)] mb-4 sm:mb-0">
-          <Sparkles className="text-[var(--primary)] w-7 h-7" /> {/* Use primary color for Sparkles */}
+          <Sparkles className="text-[var(--primary)] w-7 h-7" />
           Explore Other Courses
         </h2>
-        {/* Optional: Add a "Create New Course" button here if desired */}
       </div>
 
       <div className="flex items-center gap-3 mb-8 max-w-lg w-full">
@@ -127,16 +142,15 @@ function Explore() {
         />
         <Button
           onClick={handleSearch}
-          className="btn-primary flex items-center gap-1 !h-12 !px-6" // Use btn-primary class
+          className="btn-primary flex items-center gap-1 !h-12 !px-6"
         >
-          <Search className="w-5 h-5" /> {/* Larger icon */}
+          <Search className="w-5 h-5" />
           Search
         </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-          // Custom Skeleton Loader
           [...Array(6)].map((_, index) => (
             <div
               key={index}
@@ -147,7 +161,7 @@ function Explore() {
           ))
         ) : filteredCourses.length > 0 ? (
           filteredCourses.map((course, index) => (
-            <CourseCard key={course?.cid || index} course={course} /> // Use course.cid as key
+            <CourseCard key={course?.cid || index} course={course} />
           ))
         ) : (
           <div className="col-span-full text-center py-10 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md text-[var(--muted-foreground)]">
