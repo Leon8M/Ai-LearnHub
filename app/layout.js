@@ -74,6 +74,12 @@ export default function RootLayout({ children }) {
           <Script id="adsbygoogle-init" strategy="afterInteractive">
             {`(adsbygoogle = window.adsbygoogle || []).push({});`}
           </Script>
+          <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2511222876461022"
+          crossOrigin="anonymous"
+          strategy="afterInteractive" // Loads after the page is interactive
+        />
         </head>
         <body
           className={`

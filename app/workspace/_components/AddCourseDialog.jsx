@@ -755,18 +755,18 @@ function AddCourseDialog({ children }) {
     chapters: 0,
     includeVideo: false,
     difficulty: "",
-    category: "", // This will be the comma-separated string
+    category: "",
   });
 
-  // State for chapters dropdown and custom input
+
   const [selectedChapterOption, setSelectedChapterOption] = useState('');
   const [customChapters, setCustomChapters] = useState('');
 
-  // State for category multi-select combobox
+
   const [openCategoryCombobox, setOpenCategoryCombobox] = useState(false);
-  const [categoryInputSearch, setCategoryInputSearch] = useState(''); // For the CommandInput
-  const [selectedCategories, setSelectedCategories] = useState([]); // Array of selected categories
-  const [customCategoryValue, setCustomCategoryValue] = useState(''); // For the "Other" input
+  const [categoryInputSearch, setCategoryInputSearch] = useState(''); 
+  const [selectedCategories, setSelectedCategories] = useState([]); 
+  const [customCategoryValue, setCustomCategoryValue] = useState(''); 
 
   // Effect to update formData.chapters
   useEffect(() => {
