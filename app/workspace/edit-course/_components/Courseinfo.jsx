@@ -126,15 +126,17 @@ function Courseinfo({ course, viewCourse }) {
           {!viewCourse ? (
             <Button disabled={loading} onClick={GenerateContent} className="btn-primary w-full md:w-auto !h-12 !text-base">
               {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                // Ensured inner content is a flex container for consistent alignment
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Generating...
-                </>
+                </span>
               ) : (
-                <>
-                  <Sparkle className="w-5 h-5 mr-2" />
+                // Ensured inner content is a flex container for consistent alignment
+                <span className="flex items-center justify-center gap-2">
+                  <Sparkle className="w-5 h-5" />
                   Generate Course Content
-                </>
+                </span>
               )}
             </Button>
           ) : (
