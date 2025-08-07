@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { Loader2 } from 'lucide-react'; // Import Loader2 icon for loading state
 
 function MainHeader({ hideSide = false, courseId }) {
-  const [tokens, setTokens] = useState(null);
+  const [tokens, setTokens] = useState(null); // Initialize as null to indicate loading
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -19,14 +20,26 @@ function MainHeader({ hideSide = false, courseId }) {
           setTokens(data.tokens);
         } else {
           console.error("Token fetch failed:", data);
+          // Optionally, set tokens to 0 or null if fetch fails to indicate an issue
+          // setTokens(0); 
         }
       } catch (err) {
         console.error("Failed to fetch tokens", err);
+        // setTokens(0); // Optionally, set tokens to 0 or null on network error
       }
     };
 
+    // Fetch tokens immediately on mount
     fetchTokens();
-  }, []);
+
+    // Set up interval to fetch tokens every second
+    const intervalId = setInterval(() => {
+      fetchTokens();
+    }, 1000); // Fetch every 1000 milliseconds (1 second)
+
+    // Cleanup function: Clear the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
 
   return (
     <header className="sticky top-0 z-50 px-4 py-3 bg-background/90 backdrop-blur border-b border-border shadow-sm transition-all">
@@ -51,9 +64,14 @@ function MainHeader({ hideSide = false, courseId }) {
 
         {/* Right side */}
         <div className="flex items-center gap-4 flex-shrink-0">
-          {tokens !== null && (
+          {tokens !== null ? (
             <span className="text-sm text-muted-foreground px-3 py-1 rounded-full border border-border bg-muted shadow-sm whitespace-nowrap">
               💰 {tokens} token{tokens === 1 ? '' : 's'}
+            </span>
+          ) : (
+            // Show a subtle loading indicator while tokens are null
+            <span className="text-sm text-muted-foreground px-3 py-1 rounded-full border border-border bg-muted shadow-sm whitespace-nowrap flex items-center gap-1">
+              <Loader2 className="w-4 h-4 animate-spin text-[var(--primary)]" /> Loading...
             </span>
           )}
 
