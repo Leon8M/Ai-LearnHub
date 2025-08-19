@@ -24,7 +24,7 @@ const categoryIconMap = {
 
   // Tech & Data
   'Data Science': LucideIcons.Database,
-  'Machine Learning': LucideIcons.Bot, // Changed from Robot to Bot
+  'Machine Learning': LucideIcons.Bot,
   'Web Development': LucideIcons.Globe,
   'Mobile Development': LucideIcons.Smartphone,
   'Cybersecurity': LucideIcons.ShieldCheck,
@@ -57,14 +57,14 @@ const categoryIconMap = {
   'Sculpting': LucideIcons.Hammer,
   'Drawing': LucideIcons.Pencil,
   'Painting': LucideIcons.Brush,
-  'Theater': LucideIcons.Mask, // Confirmed Mask exists
+  'Theater': LucideIcons.Theater, // Changed from Mask to Theater
   'Dance': LucideIcons.Footprints,
   'Film Production': LucideIcons.Clapperboard,
   'Music Production': LucideIcons.Headphones,
   'Songwriting': LucideIcons.Mic,
   'Instrument Learning': LucideIcons.Guitar,
   'Illustration': LucideIcons.PenLine,
-  'Digital Painting': LucideIcons.Tablet, // Changed from TabletPen to Tablet
+  'Digital Painting': LucideIcons.Tablet,
   'Concept Art': LucideIcons.Brush,
   'Fashion Design': LucideIcons.Shirt,
   'Interior Design': LucideIcons.Sofa,
@@ -73,12 +73,12 @@ const categoryIconMap = {
   'Health & Fitness': LucideIcons.HeartPulse,
   'Nutrition': LucideIcons.Apple,
   'Public Health': LucideIcons.Hospital,
-  'Epidemiology': LucideIcons.Virus, // Confirmed Virus exists
+  'Epidemiology': LucideIcons.Microscope, // Changed from Virus to Microscope (no direct 'Virus' icon)
   'Anatomy': LucideIcons.Bone,
-  'Physiology': LucideIcons.Lungs, // Confirmed Lungs exists
+  'Physiology': LucideIcons.Heart, // Changed from Lungs to Heart (no direct 'Lungs' icon)
   'Pharmacology': LucideIcons.Pill,
   'Veterinary Science': LucideIcons.PawPrint,
-  'Yoga': LucideIcons.Lotus, // Confirmed Lotus exists
+  'Yoga': LucideIcons.Hand, // Changed from Lotus to Hand (no direct 'Lotus' icon)
   'Meditation & Mindfulness': LucideIcons.Leaf,
   'Sports Science': LucideIcons.Dumbbell,
 
@@ -88,7 +88,7 @@ const categoryIconMap = {
   'Geology': LucideIcons.Mountain,
   'Oceanography': LucideIcons.Waves,
   'Climate Change': LucideIcons.CloudSun,
-  'Renewable Energy': LucideIcons.SolarPanel, // Confirmed SolarPanel exists
+  'Renewable Energy': LucideIcons.Sun, // Changed from SolarPanel to Sun (no direct 'SolarPanel' icon)
   'Urban Planning': LucideIcons.Building2,
 
   // Social & Humanities
@@ -124,7 +124,7 @@ const categoryIconMap = {
   'Woodworking': LucideIcons.Axe,
   'Plumbing': LucideIcons.Droplet,
   'Electrical Wiring': LucideIcons.Bolt,
-  'Carpentry': LucideIcons.Saw, // Confirmed Saw exists
+  'Carpentry': LucideIcons.Saw, // 'Saw' is available, confirmed.
   'Welding': LucideIcons.Flame,
 
   // Default for unrecognized categories
@@ -267,13 +267,13 @@ const getCategoryIconAndColors = (categoryString) => {
   let colors = categoryColorMap['Default'];
 
   for (const cat of categories) {
-    const matchedCategory = Object.keys(categoryIconMap).find(key => 
+    const matchedCategory = Object.keys(categoryIconMap).find(key =>
       key.toLowerCase() === cat.toLowerCase()
     );
     if (matchedCategory) {
       IconComponent = categoryIconMap[matchedCategory];
       colors = categoryColorMap[matchedCategory];
-      break; 
+      break;
     }
   }
 

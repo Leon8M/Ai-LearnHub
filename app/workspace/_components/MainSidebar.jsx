@@ -18,7 +18,9 @@ import {
   LayoutDashboard,
   PencilRulerIcon,
   UserCircle2Icon,
-  Sparkles, // Added Sparkles for the "Create New Course" button
+  Sparkles,
+  HelpCircle,
+  Settings2Icon, // Added Sparkles for the "Create New Course" button
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -32,6 +34,8 @@ const SideOptions = [
   { title: 'How it works', icon: PencilRulerIcon, path: '/workspace/how-it-works' },
   { title: 'Profile', icon: UserCircle2Icon, path: '/workspace/profile' },
   { title: 'Get Tokens', icon: UserCircle2Icon, path: '/workspace/buy-tokens' },
+  { title: 'Help & Info', icon: HelpCircle, path: '/workspace/help-and-info' },
+  { title: 'Settings', icon: Settings2Icon, path: '/workspace/settings' },
 ];
 
 function MainSidebar() {

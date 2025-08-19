@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from "react"; // Import Suspense
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, BadgeCheck, Gem, Loader2, HandCoins, CreditCard } from "lucide-react";
-import AdSlot from "@/components/ui/AdSlot"; // Assuming AdSlot component exists
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic'; // Import dynamic from next/dynamic
+import dynamic from 'next/dynamic';
+import { useUser } from '@clerk/nextjs'; // Import useUser to get client-side user ID
 
 // Dynamically import PaystackPop with SSR disabled
-// This ensures PaystackPop is only loaded on the client-side, where 'window' is defined.
 const PaystackPop = dynamic(() => import('@paystack/inline-js'), { ssr: false });
 
 // Define token packages for purchase
@@ -22,21 +21,32 @@ const TOKEN_PACKAGES = [
   { id: 'master', tokens: 30, price: 500, label: 'Master Pack', description: 'Unlock extensive learning and creation.' },
 ];
 
-// Create a separate component to wrap with Suspense
-function EarnTokensContent() {
-  const [adsWatched, setAdsWatched] = useState(0);
-  const [loading, setLoading] = useState(false); // For ad-watching claim button
-  const [earned, setEarned] = useState(false); // For ad-watching claim success
-  const [purchaseLoading, setPurchaseLoading] = useState(false); // For purchase buttons
-  const searchParams = useSearchParams(); // This hook is now safely inside a client-side component
+// Number of tokens to grant weekly
+const WEEKLY_TOKEN_AMOUNT = 3;
+const DAYS_IN_WEEK = 7;
 
-  // Sync with localStorage on component mount and handle payment redirects
+function EarnTokensContent() {
+  const { user } = useUser(); // Get client-side user object for display/API calls
+  const [loadingClaim, setLoadingClaim] = useState(false); // For weekly token claim button
+  const [lastClaimDate, setLastClaimDate] = useState(null); // Stores Date object of last claim
+  const [canClaimWeekly, setCanClaimWeekly] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false); // For purchase buttons
+  const searchParams = useSearchParams();
+
+  // Load last claim date from localStorage and check eligibility
   useEffect(() => {
-    // Check if window is defined before accessing localStorage
-    if (typeof window !== 'undefined') {
-      const count = parseInt(localStorage.getItem("kamusi_adsWatched") || "0", 10);
-      setAdsWatched(count);
-      setEarned(false); 
+    if (typeof window !== 'undefined' && user?.id) {
+      const storedDate = localStorage.getItem(`kamusi_lastWeeklyClaim_${user.id}`);
+      if (storedDate) {
+        const lastDate = new Date(storedDate);
+        setLastClaimDate(lastDate);
+        // Check if more than a week (7 days) has passed
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - DAYS_IN_WEEK);
+        setCanClaimWeekly(lastDate < sevenDaysAgo);
+      } else {
+        setCanClaimWeekly(true); // User has never claimed before
+      }
 
       // Handle Paystack redirect status (from callback_url)
       const status = searchParams.get('status');
@@ -44,63 +54,53 @@ function EarnTokensContent() {
       const reference = searchParams.get('reference');
 
       if (status === 'success' && purchasedTokens && reference) {
-        // For Paystack, the actual token update should happen via webhook for security.
-        // Here, we'll just show a success message based on the redirect.
-        // The webhook will handle the actual token credit.
         toast.success(`🎉 Payment initiated successfully for ${purchasedTokens} tokens! Your tokens will be added shortly.`);
-        // Clear URL params to prevent re-triggering toast on refresh
         window.history.replaceState({}, document.title, window.location.pathname);
       } else if (status === 'cancelled') {
         toast.error("Payment cancelled. No tokens were added.");
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, user]); // Re-run effect when user object changes (i.e., on login)
 
-  // Callback for when an ad is "watched"
-  const handleAdWatched = useCallback(() => {
-    setAdsWatched(prevCount => {
-      const newCount = prevCount + 1;
-      // Check if window is defined before accessing localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem("kamusi_adsWatched", newCount.toString());
-      }
-      return newCount;
-    });
-  }, []);
-
-  // Handle claiming tokens from watching ads
-  const handleEarn = async () => {
-    if (adsWatched < 2) {
-      toast.info("Please watch 2 ads fully to activate the claim button.");
+  // Handle claiming weekly tokens
+  const handleClaimWeeklyTokens = async () => {
+    if (!user || !user.id) {
+      toast.error("You must be logged in to claim tokens.");
       return;
     }
-    setLoading(true);
+
+    setLoadingClaim(true);
 
     try {
-      const res = await fetch("/api/user/watch-ad-token", { method: "POST" });
+      // Call your backend API to claim weekly tokens
+      const res = await fetch("/api/user/claim-weekly-tokens", { // Updated API route
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
       const data = await res.json();
 
       if (data.success) {
-        toast.success("🎉 You’ve earned 1 token!");
-        setEarned(true);
-        // Check if window is defined before accessing localStorage
+        toast.success(`🎉 You've successfully claimed ${WEEKLY_TOKEN_AMOUNT} free tokens!`);
+        const now = new Date();
+        setLastClaimDate(now);
+        setCanClaimWeekly(false); // Disable button until next week
         if (typeof window !== 'undefined') {
-          localStorage.setItem("kamusi_adsWatched", "0"); // Reset count after successful claim
+          localStorage.setItem(`kamusi_lastWeeklyClaim_${user.id}`, now.toISOString());
         }
-        setAdsWatched(0); // Update state to reflect reset
       } else {
-        toast.error(data.error || "Something went wrong. Try again.");
+        toast.error(data.error || "Failed to claim tokens. Please try again later.");
       }
     } catch (err) {
-      console.error("Token earn error:", err);
-      toast.error("Failed to claim token. Please try again later.");
+      console.error("Weekly token claim error:", err);
+      toast.error("Failed to claim tokens. Please try again later.");
     } finally {
-      setLoading(false);
+      setLoadingClaim(false);
     }
   };
 
-  // Handle purchasing tokens via Paystack
+  // Handle purchasing tokens via Paystack (remains largely the same)
   const handlePurchase = async (packageId) => {
     setPurchaseLoading(true);
     try {
@@ -111,7 +111,6 @@ function EarnTokensContent() {
         return;
       }
 
-      // Call your backend to initialize Paystack transaction
       const res = await fetch('/api/paystack-initiate', {
         method: 'POST',
         headers: {
@@ -126,11 +125,9 @@ function EarnTokensContent() {
         return;
       }
 
-      // Redirect to Paystack's hosted page
-      if (typeof window !== 'undefined') { // Guard for client-side execution
+      if (typeof window !== 'undefined') {
         window.location.href = data.authorization_url;
       }
-
 
     } catch (error) {
       console.error("Purchase initiation error:", error);
@@ -140,7 +137,12 @@ function EarnTokensContent() {
     }
   };
 
-  const adButtonDisabled = adsWatched < 2 || loading || earned;
+  const claimButtonDisabled = loadingClaim || !canClaimWeekly;
+
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
   return (
     <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen">
@@ -154,96 +156,80 @@ function EarnTokensContent() {
           Get More Tokens for <span className="kamusi-logo">Kamusi AI</span>
         </h2>
         <p className="text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto">
-          Choose how you want to get tokens: watch ads for free, or purchase a package for instant access!
+          Choose how you want to get tokens: claim free weekly tokens, or purchase a package for instant access!
         </p>
       </motion.div>
 
-      {/* Earn Tokens by Watching Ads Section */}
+      {/* Earn Tokens Weekly Section */}
       <section className="mb-12">
         <h3 className="text-2xl font-bold font-heading text-[var(--foreground)] mb-6 flex items-center gap-2">
-          <HandCoins className="text-[var(--primary)] w-7 h-7" /> Earn Free Tokens
+          <HandCoins className="text-[var(--primary)] w-7 h-7" /> Claim Free Weekly Tokens
         </h3>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
-          {[1, 2].map((index) => (
-            <motion.div
-              key={`ad-${index}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <Card className="bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01]">
-                <CardHeader className="border-b border-[var(--border)] pb-4">
-                  <CardTitle className="flex items-center justify-between text-xl font-semibold text-[var(--foreground)]">
-                    Ad Slot {index}
-                    {adsWatched >= index ? (
-                      <BadgeCheck className="text-green-500" size={24} />
-                    ) : (
-                      <HandCoins className="text-[var(--primary)]" size={24} />
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="bg-[var(--muted)] rounded-lg overflow-hidden flex items-center justify-center min-h-[180px] max-h-[300px]">
-                    {/* Your AdSlot component will render here */}
-                    <AdSlot
-                      adClient={process.env.NEXT_PUBLIC_ADSENSE_ID}
-                      adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID}
-                      className="w-full h-full"
-                      onAdWatched={handleAdWatched}
-                    />
-                  </div>
-                  <p className="text-sm text-[var(--muted-foreground)] mt-4 text-center">
-                    Ad loads automatically. Watch for 5 seconds to count.
-                  </p>
-                  <div className="text-center mt-2">
-                    {adsWatched >= index ? (
-                      <p className="text-green-600 font-medium flex items-center justify-center gap-1">
-                        <BadgeCheck className="w-4 h-4" /> Watched!
-                      </p>
-                    ) : (
-                      <p className="text-[var(--muted-foreground)] flex items-center justify-center gap-1">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Waiting...
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="mt-8 text-center space-y-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md p-6">
-          <p className="text-lg font-semibold text-[var(--foreground)]">
-            You have watched {adsWatched} out of 2 ads.
-          </p>
-          <Button
-            onClick={handleEarn}
-            disabled={adButtonDisabled}
-            className="btn-primary w-full sm:w-auto !h-14 !text-lg !px-8 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" /> Claiming...
-              </>
-            ) : earned ? (
-              <>
-                <BadgeCheck className="w-5 h-5" /> Token Earned 🎉
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" /> Claim 1 Token
-              </>
-            )}
-          </Button>
-          {!adButtonDisabled && !earned && (
-            <p className="text-sm text-[var(--muted-foreground)] animate-pulse">
-              Click to claim your token!
+        <Card className="bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] p-6 text-center">
+          <CardHeader className="border-b border-[var(--border)] pb-4">
+            <CardTitle className="flex items-center justify-center text-2xl font-semibold text-[var(--foreground)] gap-2">
+              <Sparkles className="text-[var(--primary)] w-6 h-6" /> Your Weekly Token Reward
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <p className="text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto">
+              You can claim a generous reward of **{WEEKLY_TOKEN_AMOUNT} free tokens** once every week!
+              These tokens grant you access to premium features and content on Kamusi AI.
             </p>
-          )}
+            <div className="text-4xl font-bold text-[var(--foreground)] flex items-center justify-center gap-2">
+              {WEEKLY_TOKEN_AMOUNT} <Gem className="w-8 h-8 text-[var(--accent)]" />
+            </div>
+
+            {lastClaimDate && (
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Last claimed: {formatDate(lastClaimDate)}
+              </p>
+            )}
+
+            <Button
+              onClick={handleClaimWeeklyTokens}
+              disabled={claimButtonDisabled}
+              className="btn-primary w-full sm:w-auto !h-14 !text-lg !px-8 flex items-center justify-center gap-2"
+            >
+              {loadingClaim ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Claiming...
+                </>
+              ) : !user ? (
+                <>
+                  <Sparkles className="w-5 h-5" /> Log in to Claim
+                </>
+              ) : canClaimWeekly ? (
+                <>
+                  <Sparkles className="w-5 h-5" /> Claim {WEEKLY_TOKEN_AMOUNT} Tokens
+                </>
+              ) : (
+                <>
+                  <BadgeCheck className="w-5 h-5" /> Claimed for this week
+                </>
+              )}
+            </Button>
+            {!canClaimWeekly && user && lastClaimDate && (
+                <p className="text-sm text-yellow-600 animate-pulse">
+                    You can claim again on {formatDate(new Date(lastClaimDate.getFullYear(), lastClaimDate.getMonth(), lastClaimDate.getDate() + DAYS_IN_WEEK))}.
+                </p>
+            )}
+            {!user && (
+                 <p className="text-sm text-[var(--muted-foreground)]">
+                    Please log in to claim your weekly tokens.
+                </p>
+            )}
+          </CardContent>
+        </Card>
+        <div className="mt-8 text-center text-sm text-[var(--muted-foreground)]">
+            <p>
+                **Disclaimer:** Weekly token grants are subject to change without prior notice.
+                Tokens are for use within Kamusi AI only and have no real-world monetary value.
+            </p>
         </div>
       </section>
 
-      {/* Buy Tokens Section */}
+      {/* Buy Tokens Section (remains unchanged) */}
       <section className="mt-16">
         <h3 className="text-2xl font-bold font-heading text-[var(--foreground)] mb-6 flex items-center gap-2">
           <CreditCard className="text-[var(--primary)] w-7 h-7" /> Buy Tokens
@@ -293,10 +279,9 @@ function EarnTokensContent() {
   );
 }
 
-// The default export now wraps the content in a Suspense boundary
 export default function EarnTokensPageWrapper() {
   return (
-    <Suspense fallback={<div>Loading tokens page...</div>}> {/* You can customize the fallback */}
+    <Suspense fallback={<div>Loading tokens page...</div>}>
       <EarnTokensContent />
     </Suspense>
   );

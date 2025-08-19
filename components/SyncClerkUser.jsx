@@ -1,30 +1,10 @@
 "use client";
-import { useUser } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
+// No other imports are needed as this component will no longer perform sync logic.
 
 export default function SyncClerkUser() {
-  const { user, isLoaded } = useUser();
-  const [synced, setSynced] = useState(false);
-
-  useEffect(() => {
-    if (!synced && isLoaded && user?.emailAddresses?.[0]?.emailAddress && user.id) {
-      const syncUser = async () => {
-        try {
-          await axios.post("/api/user", {
-            email: user.emailAddresses[0].emailAddress,
-            name: `${user.firstName ?? ""} ${user.lastName ?? ""}`,
-            subID: user.id, // ✅ Send this
-          });
-          setSynced(true); // prevent multiple posts
-        } catch (err) {
-          console.error("Failed to sync user:", err);
-        }
-      };
-
-      syncUser();
-    }
-  }, [isLoaded, user, synced]);
-
+  // This component's responsibility for syncing user data has been moved
+  // to app/provider.jsx as per user's request.
+  // It now simply renders nothing to avoid duplicate sync attempts or errors.
   return null;
 }

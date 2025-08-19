@@ -1,5 +1,5 @@
 {
-  "id": "74c45e7b-e4f9-4ed7-a3f5-b35b572bb8f3",
+  "id": "180c2b3b-05b8-4684-961b-272be457e129",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -49,8 +49,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "includeVideo": {
-          "name": "includeVideo",
+        "include_video": {
+          "name": "include_video",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false,
@@ -68,21 +68,21 @@
           "primaryKey": false,
           "notNull": true
         },
-        "courseJson": {
-          "name": "courseJson",
+        "course_json": {
+          "name": "course_json",
           "type": "json",
           "primaryKey": false,
           "notNull": false
         },
-        "bannerImageUrl": {
-          "name": "bannerImageUrl",
+        "banner_image_url": {
+          "name": "banner_image_url",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false,
           "default": "''"
         },
-        "courseContent": {
-          "name": "courseContent",
+        "course_content": {
+          "name": "course_content",
           "type": "json",
           "primaryKey": false,
           "notNull": false,
@@ -158,8 +158,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "completedChapters": {
-          "name": "completedChapters",
+        "completed_chapters": {
+          "name": "completed_chapters",
           "type": "json",
           "primaryKey": false,
           "notNull": false
@@ -189,6 +189,74 @@
           ],
           "columnsTo": [
             "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.token_transactions": {
+      "name": "token_transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "token_transactions_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "token_transactions_user_id_users_sub_id_fk": {
+          "name": "token_transactions_user_id_users_sub_id_fk",
+          "tableFrom": "token_transactions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "sub_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -233,9 +301,22 @@
           "primaryKey": false,
           "notNull": true
         },
-        "subID": {
-          "name": "subID",
+        "sub_id": {
+          "name": "sub_id",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tokens": {
+          "name": "tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 3
+        },
+        "last_weekly_claim_date": {
+          "name": "last_weekly_claim_date",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         }
@@ -249,6 +330,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        },
+        "users_sub_id_unique": {
+          "name": "users_sub_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "sub_id"
           ]
         }
       },
