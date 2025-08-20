@@ -6,7 +6,7 @@ import axios from 'axios';
 import { Search, Sparkles, Loader2 } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import CourseCard from '../_components/CourseCard';
-import { Skeleton } from '@/components/ui/skeleton'; // Keeping import for reference, replaced with custom skeleton
+import { Skeleton } from '@/components/ui/skeleton';
 
 function Explore() {
   const [courseList, setCourseList] = useState([]);
@@ -24,7 +24,7 @@ function Explore() {
         console.warn("API returned no courses or empty data.");
         setCourseList([]);
         setFilteredCourses([]);
-        return; // Exit early if no data
+        return;
       }
       
       const processedCourses = response.data.map(course => {
@@ -33,30 +33,26 @@ function Explore() {
           try {
             course.courseJson = JSON.parse(course.courseJson);
           } catch (e) {
-            console.error("Failed to parse courseJson for course:", course.cid, e);
+            //console.error("Failed to parse courseJson for course:", course.cid, e);
             course.courseJson = {}; // Fallback to an empty object
           }
         }
         // --- FIX END ---
-
-        // Process courseContent if it's a string (from Drizzle's JSON type)
-        // This part was already good, ensuring courseContent is an array/object
         if (course.courseContent && typeof course.courseContent === 'string') {
           try {
             course.courseContent = JSON.parse(course.courseContent);
           } catch (e) {
-            console.error("Failed to parse courseContent for course:", course.cid, e);
-            course.courseContent = []; // Fallback to an empty array
+            //console.error("Failed to parse courseContent for course:", course.cid, e);
+            course.courseContent = [];
           }
         }
         return course;
       });
 
       setCourseList(processedCourses);
-      setFilteredCourses(processedCourses); // Initialize filtered list with all courses
+      setFilteredCourses(processedCourses);
     } catch (error) {
       console.error('Failed to fetch course list', error);
-      // You might want to add a toast.error here for user feedback
     } finally {
       setLoading(false);
     }
@@ -68,11 +64,10 @@ function Explore() {
     }
   }, [user, GetCourseList]);
 
-  // Improved Search Algorithm
   const handleSearch = useCallback(() => {
     const trimmedSearchTerm = searchTerm.trim().toLowerCase();
     if (!trimmedSearchTerm) {
-      setFilteredCourses(courseList); // Show all courses if search term is empty
+      setFilteredCourses(courseList);
       return;
     }
 
@@ -80,7 +75,6 @@ function Explore() {
 
     const scoredCourses = courseList.map(course => {
       let score = 0;
-      // Access courseJson.course properties directly after ensuring courseJson is parsed
       const courseName = course?.courseJson?.course?.name?.toLowerCase() || '';
       const courseDescription = course?.courseJson?.course?.description?.toLowerCase() || '';
       const courseCategory = course?.courseJson?.course?.category?.toLowerCase() || '';

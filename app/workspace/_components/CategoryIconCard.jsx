@@ -57,7 +57,7 @@ const categoryIconMap = {
   'Sculpting': LucideIcons.Hammer,
   'Drawing': LucideIcons.Pencil,
   'Painting': LucideIcons.Brush,
-  'Theater': LucideIcons.Theater, // Changed from Mask to Theater
+  'Theater': LucideIcons.Theater,
   'Dance': LucideIcons.Footprints,
   'Film Production': LucideIcons.Clapperboard,
   'Music Production': LucideIcons.Headphones,
@@ -73,12 +73,12 @@ const categoryIconMap = {
   'Health & Fitness': LucideIcons.HeartPulse,
   'Nutrition': LucideIcons.Apple,
   'Public Health': LucideIcons.Hospital,
-  'Epidemiology': LucideIcons.Microscope, // Changed from Virus to Microscope (no direct 'Virus' icon)
+  'Epidemiology': LucideIcons.Microscope,
   'Anatomy': LucideIcons.Bone,
-  'Physiology': LucideIcons.Heart, // Changed from Lungs to Heart (no direct 'Lungs' icon)
+  'Physiology': LucideIcons.Heart,
   'Pharmacology': LucideIcons.Pill,
   'Veterinary Science': LucideIcons.PawPrint,
-  'Yoga': LucideIcons.Hand, // Changed from Lotus to Hand (no direct 'Lotus' icon)
+  'Yoga': LucideIcons.Hand,
   'Meditation & Mindfulness': LucideIcons.Leaf,
   'Sports Science': LucideIcons.Dumbbell,
 
@@ -88,7 +88,7 @@ const categoryIconMap = {
   'Geology': LucideIcons.Mountain,
   'Oceanography': LucideIcons.Waves,
   'Climate Change': LucideIcons.CloudSun,
-  'Renewable Energy': LucideIcons.Sun, // Changed from SolarPanel to Sun (no direct 'SolarPanel' icon)
+  'Renewable Energy': LucideIcons.Sun,
   'Urban Planning': LucideIcons.Building2,
 
   // Social & Humanities
@@ -131,7 +131,6 @@ const categoryIconMap = {
   'Default': LucideIcons.BookOpen
 };
 
-// Define color gradients for categories (no changes needed here, as they are not causing errors)
 const categoryColorMap = {
   // Core Academic
   'Programming': ['#4CAF50', '#2E7D32'], // Green
@@ -260,7 +259,6 @@ const categoryColorMap = {
   'Default': ['#A7A7A7', '#7C7C7C'] // Neutral Grey
 };
 
-// Helper function to get icon and colors based on category string
 const getCategoryIconAndColors = (categoryString) => {
   const categories = categoryString.split(',').map(c => c.trim());
   let IconComponent = categoryIconMap['Default'];

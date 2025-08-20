@@ -14,7 +14,6 @@ function Courseinfo({ course, viewCourse }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Function to calculate total duration of the course
   const calculateTotalDuration = () => {
     let totalMinutes = 0;
     if (courseLayout?.chapters && Array.isArray(courseLayout.chapters)) {
@@ -61,7 +60,6 @@ function Courseinfo({ course, viewCourse }) {
     }
   };
 
-  // Function to generate course content
   const GenerateContent = async () => {
     setLoading(true);
     try {
@@ -74,7 +72,7 @@ function Courseinfo({ course, viewCourse }) {
       toast.success('Content generated successfully!');
       router.replace(`/workspace`);
     } catch (error) {
-      console.error('Error generating content:', error);
+      //console.error('Error generating content:', error);
       toast.error('Something went wrong. Try again.');
       setLoading(false);
     }
@@ -82,7 +80,6 @@ function Courseinfo({ course, viewCourse }) {
 
   return (
     <div className="flex flex-col md:flex-row gap-6 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md overflow-hidden p-6">
-      {/* Conditionally render CategoryIconCard */}
       {course?.bannerImageUrl && (
         <CategoryIconCard
           category={course?.bannerImageUrl || courseLayout?.category || 'Default'} 
@@ -126,13 +123,11 @@ function Courseinfo({ course, viewCourse }) {
           {!viewCourse ? (
             <Button disabled={loading} onClick={GenerateContent} className="btn-primary w-full md:w-auto !h-12 !text-base">
               {loading ? (
-                // Ensured inner content is a flex container for consistent alignment
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Generating...
                 </span>
               ) : (
-                // Ensured inner content is a flex container for consistent alignment
                 <span className="flex items-center justify-center gap-2">
                   <Sparkle className="w-5 h-5" />
                   Generate Course Content

@@ -1,12 +1,9 @@
-// app/api/paystack-initiate/route.js
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
-import { db } from '@/config/db'; // Assuming your Drizzle DB instance
-import { usersTable } from '@/config/schema'; // Assuming your usersTable schema
+import { db } from '@/config/db';
+import { usersTable } from '@/config/schema';
 import { eq } from 'drizzle-orm';
 
-// Define your token packages
-// Amount in Kobo (smallest currency unit), so multiply KES by 100
 const TOKEN_PACKAGES = {
   'single': { tokens: 1, price: 50, name: '1 Token', amount_kobo: 50 * 100 },
   'starter': { tokens: 3, price: 100, name: '3 Tokens (Starter)', amount_kobo: 100 * 100 },
@@ -30,10 +27,9 @@ export async function POST(req) {
 
   const { tokens, amount_kobo, name } = selectedPackage;
   const userEmail = user.primaryEmailAddress.emailAddress;
-  const userId = user.id; // Clerk user ID
+  const userId = user.id;
 
   try {
-    // Generate a unique reference for Paystack
     const reference = `kamusi_token_${userId}_${Date.now()}`;
 
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -44,10 +40,9 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         email: userEmail,
-        amount: amount_kobo, // amount in kobo
-        currency: 'KES', // Kenyan Shilling
+        amount: amount_kobo,
+        currency: 'KES',
         reference: reference,
-        // The callback_url is where Paystack redirects the user after payment attempt
         callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/workspace/buy-tokens?status=success&tokens=${tokens}&reference=${reference}`,
         metadata: {
           userId: userId,
@@ -67,10 +62,9 @@ export async function POST(req) {
       );
     }
 
-    // Return the authorization URL for the frontend to redirect
     return NextResponse.json({
       authorization_url: data.data.authorization_url,
-      access_code: data.data.access_code, // access_code is useful if using inline popup
+      access_code: data.data.access_code,
       reference: data.data.reference,
     });
 

@@ -8,12 +8,10 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useUser } from '@clerk/nextjs'; // Import useUser to get client-side user ID
+import { useUser } from '@clerk/nextjs';
 
-// Dynamically import PaystackPop with SSR disabled
 const PaystackPop = dynamic(() => import('@paystack/inline-js'), { ssr: false });
 
-// Define token packages for purchase
 const TOKEN_PACKAGES = [
   { id: 'single', tokens: 1, price: 50, label: 'Buy 1 Token', description: 'Quick top-up for a single course.' },
   { id: 'starter', tokens: 3, price: 100, label: 'Starter Pack', description: 'Great for getting started with multiple courses.' },
@@ -21,34 +19,30 @@ const TOKEN_PACKAGES = [
   { id: 'master', tokens: 30, price: 500, label: 'Master Pack', description: 'Unlock extensive learning and creation.' },
 ];
 
-// Number of tokens to grant weekly
 const WEEKLY_TOKEN_AMOUNT = 3;
 const DAYS_IN_WEEK = 7;
 
 function EarnTokensContent() {
-  const { user } = useUser(); // Get client-side user object for display/API calls
-  const [loadingClaim, setLoadingClaim] = useState(false); // For weekly token claim button
-  const [lastClaimDate, setLastClaimDate] = useState(null); // Stores Date object of last claim
+  const { user } = useUser(); 
+  const [loadingClaim, setLoadingClaim] = useState(false); 
+  const [lastClaimDate, setLastClaimDate] = useState(null);
   const [canClaimWeekly, setCanClaimWeekly] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState(false); // For purchase buttons
+  const [purchaseLoading, setPurchaseLoading] = useState(false); 
   const searchParams = useSearchParams();
 
-  // Load last claim date from localStorage and check eligibility
   useEffect(() => {
     if (typeof window !== 'undefined' && user?.id) {
       const storedDate = localStorage.getItem(`kamusi_lastWeeklyClaim_${user.id}`);
       if (storedDate) {
         const lastDate = new Date(storedDate);
         setLastClaimDate(lastDate);
-        // Check if more than a week (7 days) has passed
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - DAYS_IN_WEEK);
         setCanClaimWeekly(lastDate < sevenDaysAgo);
       } else {
-        setCanClaimWeekly(true); // User has never claimed before
+        setCanClaimWeekly(true);
       }
 
-      // Handle Paystack redirect status (from callback_url)
       const status = searchParams.get('status');
       const purchasedTokens = searchParams.get('tokens');
       const reference = searchParams.get('reference');
@@ -61,9 +55,8 @@ function EarnTokensContent() {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, [searchParams, user]); // Re-run effect when user object changes (i.e., on login)
+  }, [searchParams, user]);
 
-  // Handle claiming weekly tokens
   const handleClaimWeeklyTokens = async () => {
     if (!user || !user.id) {
       toast.error("You must be logged in to claim tokens.");
@@ -73,8 +66,7 @@ function EarnTokensContent() {
     setLoadingClaim(true);
 
     try {
-      // Call your backend API to claim weekly tokens
-      const res = await fetch("/api/user/claim-weekly-tokens", { // Updated API route
+      const res = await fetch("/api/user/claim-weekly-tokens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
@@ -85,7 +77,7 @@ function EarnTokensContent() {
         toast.success(`🎉 You've successfully claimed ${WEEKLY_TOKEN_AMOUNT} free tokens!`);
         const now = new Date();
         setLastClaimDate(now);
-        setCanClaimWeekly(false); // Disable button until next week
+        setCanClaimWeekly(false);
         if (typeof window !== 'undefined') {
           localStorage.setItem(`kamusi_lastWeeklyClaim_${user.id}`, now.toISOString());
         }
@@ -93,14 +85,13 @@ function EarnTokensContent() {
         toast.error(data.error || "Failed to claim tokens. Please try again later.");
       }
     } catch (err) {
-      console.error("Weekly token claim error:", err);
+      //console.error("Weekly token claim error:", err);
       toast.error("Failed to claim tokens. Please try again later.");
     } finally {
       setLoadingClaim(false);
     }
   };
 
-  // Handle purchasing tokens via Paystack (remains largely the same)
   const handlePurchase = async (packageId) => {
     setPurchaseLoading(true);
     try {
@@ -130,7 +121,7 @@ function EarnTokensContent() {
       }
 
     } catch (error) {
-      console.error("Purchase initiation error:", error);
+      //console.error("Purchase initiation error:", error);
       toast.error(error.response?.data?.error || "Failed to initiate purchase. Please try again.");
     } finally {
       setPurchaseLoading(false);
@@ -160,7 +151,6 @@ function EarnTokensContent() {
         </p>
       </motion.div>
 
-      {/* Earn Tokens Weekly Section */}
       <section className="mb-12">
         <h3 className="text-2xl font-bold font-heading text-[var(--foreground)] mb-6 flex items-center gap-2">
           <HandCoins className="text-[var(--primary)] w-7 h-7" /> Claim Free Weekly Tokens
@@ -229,7 +219,6 @@ function EarnTokensContent() {
         </div>
       </section>
 
-      {/* Buy Tokens Section (remains unchanged) */}
       <section className="mt-16">
         <h3 className="text-2xl font-bold font-heading text-[var(--foreground)] mb-6 flex items-center gap-2">
           <CreditCard className="text-[var(--primary)] w-7 h-7" /> Buy Tokens

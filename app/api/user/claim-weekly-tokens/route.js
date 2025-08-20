@@ -1,4 +1,3 @@
-// pages/api/user/claim-weekly-tokens/route.js
 import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/config/db';
 import { usersTable, tokenTransactionsTable } from '@/config/schema';
@@ -35,10 +34,6 @@ export async function POST(req) {
 
     const lastClaimDate = dbUser.lastWeeklyClaimDate ? new Date(dbUser.lastWeeklyClaimDate) : null;
     const now = new Date();
-
-    // Check if new Date(null) correctly results in null for 'lastClaimDate' to prevent calling methods on null.
-    // The previous code already has this check with 'lastClaimDate && now < nextClaimDate'
-    // but the error suggests the 'toISOString' call might be happening implicitly by Drizzle when converting to/from the Date object.
 
     const nextClaimDate = lastClaimDate ? new Date(lastClaimDate) : null;
     if (nextClaimDate) {

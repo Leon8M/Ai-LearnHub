@@ -33,7 +33,7 @@ function CourseCard({ course }) {
       router.push(`/course/${course?.cid}`);
 
     } catch (error) {
-      console.error("Failed to enroll:", error);
+      //console.error("Failed to enroll:", error);
       toast.error(error.response?.data?.error || "Failed to enroll. Please try again.");
     } finally {
       setLoading(false);
@@ -46,7 +46,6 @@ function CourseCard({ course }) {
       transition={{ type: 'spring', stiffness: 200, damping: 15 }}
       className="group border border-[var(--border)] bg-[var(--card)] rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all"
     >
-      {/* Replaced Image with CategoryIconCard */}
       <CategoryIconCard 
         category={course?.bannerImageUrl || courseJson?.category || 'Default'}
         className="w-full h-44 rounded-t-xl overflow-hidden" 

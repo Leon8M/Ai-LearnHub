@@ -20,7 +20,7 @@ import {
   UserCircle2Icon,
   Sparkles,
   HelpCircle,
-  Settings2Icon, // Added Sparkles for the "Create New Course" button
+  Settings2Icon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

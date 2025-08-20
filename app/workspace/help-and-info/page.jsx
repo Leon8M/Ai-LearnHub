@@ -42,7 +42,6 @@ const HelpAndInfo = () => {
               </p>
             </motion.div>
 
-            {/* Who We Are */}
             <motion.div
               className="bg-[var(--card)] rounded-xl p-6 md:p-8 shadow-sm border border-[var(--border)] flex flex-col justify-start"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -58,7 +57,6 @@ const HelpAndInfo = () => {
               </p>
             </motion.div>
 
-            {/* Our Vision */}
             <motion.div
               className="md:col-span-2 bg-[var(--card)] rounded-xl p-6 md:p-8 shadow-sm border border-[var(--border)] flex flex-col justify-start"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -76,7 +74,6 @@ const HelpAndInfo = () => {
           </div>
         </section>
 
-        {/* Support Section */}
         <section className="flex flex-col items-center mt-16 md:mt-24">
           <motion.h4 className="text-[var(--primary)] text-2xl md:text-3xl font-bold mb-8 text-center">
             Get Support

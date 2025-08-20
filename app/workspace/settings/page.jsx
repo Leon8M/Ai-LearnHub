@@ -8,18 +8,16 @@ import { toast } from 'sonner';
 
 const SettingsPage = () => {
   const { user, isLoaded, isSignedIn } = useUser();
-  const { signOut, user: clerkUser } = useClerk(); // Use clerkUser for destroy method
+  const { signOut, user: clerkUser } = useClerk();
   const [tokenBalance, setTokenBalance] = useState(0);
   const [loadingTokens, setLoadingTokens] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // Fetch token balance
   useEffect(() => {
     const fetchTokenBalance = async () => {
       if (!isLoaded || !isSignedIn || !user) {
         setLoadingTokens(false);
-        // Optionally, reset token balance if user logs out or isn't loaded
         setTokenBalance(0);
         return;
       }
@@ -29,32 +27,27 @@ const SettingsPage = () => {
         const res = await fetch('/api/user/tokens');
         const data = await res.json();
 
-        // Check if the response was successful (HTTP status 2xx)
         if (res.ok) {
-          // The /api/user/tokens route returns { tokens: value } directly on success
           setTokenBalance(data.tokens);
         } else {
-          // Handle specific errors based on API response structure
           if (res.status === 404) {
             toast.info(data.error || 'User data not found. Token balance defaults to 0.');
-            setTokenBalance(0); // Set to 0 if user data isn't found in your DB yet
+            setTokenBalance(0);
           } else {
             toast.error(data.error || 'Failed to fetch token balance from server.');
-            setTokenBalance(0); // Default to 0 on other server errors
+            setTokenBalance(0);
           }
         }
       } catch (error) {
-        console.error('Error fetching token balance:', error);
+        //console.error('Error fetching token balance:', error);
         toast.error('Failed to fetch token balance due to a network error. Please check your connection.');
-        setTokenBalance(0); // Default to 0 on network errors
+        setTokenBalance(0);
       } finally {
         setLoadingTokens(false);
       }
     };
 
     fetchTokenBalance();
-    // Dependency array ensures this effect runs when user's sign-in status changes
-    // or when the user object itself updates.
   }, [isLoaded, isSignedIn, user]);
 
   const handleDeleteAccount = async () => {
@@ -77,7 +70,7 @@ const SettingsPage = () => {
 
       if (!dbDeleteRes.ok || !dbDeleteData.success) {
         toast.error(dbDeleteData.error || 'Failed to delete data from Kamusi AI database. Please try again.');
-        console.error('Database deletion failed:', dbDeleteData.error);
+        //console.error('Database deletion failed:', dbDeleteData.error);
         setDeletingAccount(false);
         return;
       }
@@ -88,7 +81,7 @@ const SettingsPage = () => {
       toast.success('Your account has been successfully deleted. Goodbye!');
 
     } catch (error) {
-      console.error('Error deleting account:', error);
+      //console.error('Error deleting account:', error);
       toast.error('An error occurred during account deletion. Please try again.');
     } finally {
       setDeletingAccount(false);
@@ -110,7 +103,7 @@ const SettingsPage = () => {
       <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 text-center text-[var(--muted-foreground)]">
         <p className="text-xl mb-4">You need to be signed in to view settings.</p>
         <button
-          onClick={() => signOut()} // Redirects to Clerk sign-in page if not authenticated
+          onClick={() => signOut()}
           className="btn-primary px-6 py-3 rounded-lg text-lg bg-[var(--primary)] text-black hover:bg-opacity-90 transition-all duration-300"
         >
           Sign In

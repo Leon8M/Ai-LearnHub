@@ -20,7 +20,7 @@ function EnrolledCard({ course, enrollCourse, refreshList }) {
       try {
         parsedCourseContent = JSON.parse(parsedCourseContent);
       } catch (e) {
-        console.error("Failed to parse courseContent in EnrolledCard:", e);
+        //console.error("Failed to parse courseContent in EnrolledCard:", e);
         parsedCourseContent = [];
       }
     }
@@ -56,7 +56,7 @@ function EnrolledCard({ course, enrollCourse, refreshList }) {
         toast.error(response.data.error || "Failed to unenroll. Please try again.");
       }
     } catch (error) {
-      console.error("Failed to unenroll:", error);
+      //console.error("Failed to unenroll:", error);
       toast.error(error.response?.data?.error || "Failed to unenroll. Please try again.");
     } finally {
       setUnenrollLoading(false);
@@ -86,10 +86,9 @@ function EnrolledCard({ course, enrollCourse, refreshList }) {
         </TooltipContent>
       </Tooltip>
 
-      {/* Replaced Image with CategoryIconCard */}
       <CategoryIconCard 
-        category={course?.bannerImageUrl || courseJson?.category || 'Default'} // Use bannerImageUrl (which is now category) or fallback
-        className="w-full h-44 rounded-lg overflow-hidden" // Maintain existing image container styling
+        category={course?.bannerImageUrl || courseJson?.category || 'Default'} 
+        className="w-full h-44 rounded-lg overflow-hidden"
       />
 
       <div className="flex flex-col gap-2 px-1">

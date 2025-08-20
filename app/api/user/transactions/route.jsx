@@ -1,6 +1,4 @@
-// /api/user/transactions/route.jsx
 import { db } from "@/config/db";
-// Corrected import: 'tokenTransactionsTable' (singular 'token')
 import { usersTable, tokenTransactionsTable } from "@/config/schema"; 
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -23,7 +21,7 @@ export async function POST(req) {
 
   const transactions = await db
     .select()
-    .from(tokenTransactionsTable) // Use the correct table name here too
+    .from(tokenTransactionsTable)
     .where(eq(tokenTransactionsTable.userId, user[0].id));
 
   return NextResponse.json({ transactions });

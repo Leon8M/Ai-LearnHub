@@ -1,11 +1,9 @@
-// app/api/paystack-webhook/route.js
 import { NextResponse } from 'next/server';
-import crypto from 'crypto'; // Node.js crypto module for signature verification
+import crypto from 'crypto';
 import { db } from '@/config/db';
 import { usersTable, tokenTransactionsTable } from '@/config/schema';
 import { eq } from 'drizzle-orm';
 
-// Disable body parsing for this route, as Paystack sends raw body
 export const config = {
   api: {
     bodyParser: false,
@@ -13,7 +11,6 @@ export const config = {
 };
 
 export async function POST(req) {
-  // Use your main Paystack Secret Key for webhook verification
   const secret = process.env.PAYSTACK_SECRET_KEY; 
   const signature = req.headers.get('x-paystack-signature');
 
@@ -22,10 +19,9 @@ export async function POST(req) {
     return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
 
-  const rawBody = await req.text(); // Get the raw body as text
+  const rawBody = await req.text();
 
-  // Verify the webhook signature
-  const hash = crypto.createHmac('sha512', secret) // Use the main secret key here
+  const hash = crypto.createHmac('sha512', secret)
     .update(rawBody)
     .digest('hex');
 
@@ -42,16 +38,14 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // Handle the event
   switch (event.event) {
     case 'charge.success':
       const data = event.data;
       console.log('Paystack Charge Success Event:', data.reference);
 
-      // Extract metadata (sent during initialization)
       const userId = data.metadata?.userId;
       const tokenAmount = parseInt(data.metadata?.tokenAmount, 10);
-      const transactionRef = data.reference; // Paystack transaction reference
+      const transactionRef = data.reference; 
 
       if (!userId || isNaN(tokenAmount)) {
         console.error('Missing userId or tokenAmount in metadata for transaction:', transactionRef);
@@ -59,8 +53,6 @@ export async function POST(req) {
       }
 
       try {
-        // IMPORTANT: Verify the transaction status with Paystack's API
-        // This is a crucial step to prevent fraud.
         const verificationResponse = await fetch(`https://api.paystack.co/transaction/verify/${transactionRef}`, {
           method: 'GET',
           headers: {
@@ -74,17 +66,15 @@ export async function POST(req) {
           return NextResponse.json({ error: 'Transaction verification failed' }, { status: 400 });
         }
 
-        // Find the user in your database
         const [dbUser] = await db.select()
           .from(usersTable)
-          .where(eq(usersTable.subID, userId)); // Assuming subID is Clerk's user.id
+          .where(eq(usersTable.subID, userId));
 
         if (!dbUser) {
           console.error('User not found in DB for userId:', userId);
           return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Check if this transaction has already been processed (idempotency)
         const [existingTransaction] = await db.select()
           .from(tokenTransactionsTable)
           .where(eq(tokenTransactionsTable.transactionId, transactionRef));
@@ -94,19 +84,17 @@ export async function POST(req) {
           return NextResponse.json({ received: true, message: 'Transaction already processed' });
         }
 
-        // Update user's token balance
         const updatedTokens = dbUser.tokens + tokenAmount;
         await db.update(usersTable)
           .set({ tokens: updatedTokens })
           .where(eq(usersTable.id, dbUser.id));
 
-        // Record the transaction
         await db.insert(tokenTransactionsTable).values({
           userId: dbUser.id,
           type: 'purchase',
           amount: tokenAmount,
           timestamp: new Date().toISOString(),
-          transactionId: transactionRef, // Store Paystack reference
+          transactionId: transactionRef,
         });
 
         console.log(`Successfully awarded ${tokenAmount} tokens to user ${userId} for transaction ${transactionRef}`);
@@ -119,6 +107,5 @@ export async function POST(req) {
       console.log(`Unhandled Paystack event type ${event.event}`);
   }
 
-  // Acknowledge receipt of the event
   return NextResponse.json({ received: true });
 }

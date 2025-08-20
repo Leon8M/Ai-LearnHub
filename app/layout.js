@@ -7,7 +7,6 @@ import SyncClerkUser from "@/components/SyncClerkUser";
 import Script from "next/script";
 
 
-// ✅ NEW FONTS
 import { Inter, Sora } from "next/font/google";
 import localFont from "next/font/local";
 
@@ -33,11 +32,11 @@ const sora = Sora({
   variable: "--font-brand",
 });
 
-// ✅ Custom logo font from Google: Unbounded
+
 const unbounded = localFont({
   src: [
     {
-      path: "../public/fonts/Unbounded-Bold.ttf", // make sure this file exists
+      path: "../public/fonts/Unbounded-Bold.ttf",
       weight: "700",
       style: "normal",
     },
@@ -47,8 +46,30 @@ const unbounded = localFont({
 });
 
 export const metadata = {
-  title: "Kamusi AI",
-  description: "App for users to generate courses with AI and learn",
+  title: "Kamusi AI | AI Course Generator & Personalized Learning Platform",
+  description: "Generate structured, personalized courses on any topic instantly with Kamusi AI. Your journey to mastery in programming, data science, and more begins now.",
+  
+  openGraph: {
+    title: "Kamusi AI | AI-Powered Course Creator",
+    description: "Instantly create and learn personalized courses on any topic with AI.",
+    url: "https://kamusi.denexsoftware.co.ke/", 
+    siteName: "Kamusi AI",
+    images: [
+      {
+        url: 'https://kamusi.denexsoftware.co.ke/og-image.png',
+        width: 2560,
+        height: 1440,
+        alt: 'Kamusi AI - AI Course Generator',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  
+  alternates: {
+    canonical: 'https://kamusi.denexsoftware.co.ke/', 
+  },
+
   icons: {
     icon: "/logo-main.png",
   },
@@ -78,7 +99,7 @@ export default function RootLayout({ children }) {
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2511222876461022"
           crossOrigin="anonymous"
-          strategy="afterInteractive" // Loads after the page is interactive
+          strategy="afterInteractive" 
         />
         </head>
         <body

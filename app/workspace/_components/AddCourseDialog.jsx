@@ -31,7 +31,6 @@ import { toast } from 'sonner';
 // --- Import CATEGORIES from external file ---
 import { CATEGORIES } from '@/constants/categories';
 
-// Define suggested chapter options
 const CHAPTER_OPTIONS = [
   { label: "3 Chapters (Not Complex)", value: 3 },
   { label: "6 Chapters (Average Detail)", value: 6 },
@@ -45,7 +44,6 @@ function AddCourseDialog({ children }) {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // State for form fields
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -55,11 +53,9 @@ function AddCourseDialog({ children }) {
     category: "",
   });
 
-  // State for chapter selection
   const [selectedChapterOption, setSelectedChapterOption] = useState('');
   const [customChapters, setCustomChapters] = useState('');
 
-  // State for category combobox
   const [openCategoryCombobox, setOpenCategoryCombobox] = useState(false);
   const [categoryInputSearch, setCategoryInputSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -71,7 +67,6 @@ function AddCourseDialog({ children }) {
     );
   }, [categoryInputSearch]);
 
-  // Effect to update formData.chapters
   useEffect(() => {
     let chaptersNum = 0;
     if (selectedChapterOption === 'other') {
@@ -83,7 +78,6 @@ function AddCourseDialog({ children }) {
     setFormData((prev) => ({ ...prev, chapters: chaptersNum }));
   }, [selectedChapterOption, customChapters]);
 
-  // Effect to update formData.category from selectedCategories and customCategoryValue
   useEffect(() => {
     let allCategories = [...selectedCategories];
     const trimmedCustom = customCategoryValue.trim();
@@ -93,16 +87,13 @@ function AddCourseDialog({ children }) {
     setFormData((prev) => ({ ...prev, category: allCategories.join(', ') }));
   }, [selectedCategories, customCategoryValue]);
 
-  // Memoized input change handler
   const handleInputChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  // Memoized category selection handler
   const handleCategorySelect = useCallback((categoryValue) => {
-    // If selecting an existing category from CATEGORIES
     if (CATEGORIES.includes(categoryValue)) {
-      setCustomCategoryValue(''); // Clear custom value if a predefined category is selected
+      setCustomCategoryValue('');
       setSelectedCategories((prevSelected) => {
         const isSelected = prevSelected.includes(categoryValue);
         if (isSelected) {
@@ -111,19 +102,15 @@ function AddCourseDialog({ children }) {
           return [...prevSelected, categoryValue];
         }
       });
-      setCategoryInputSearch(''); // Clear search input after selection
-      // Do NOT close popover automatically for multi-select, unless "Other" is selected (which isn't here now).
-      // If you want it to close, you can set `setOpenCategoryCombobox(false);`
+      setCategoryInputSearch('');
     } else {
-      // This path is for adding the "custom" value from the CommandItem
       setCustomCategoryValue(categoryValue);
-      setSelectedCategories([]); // Clear standard selections when a custom one is chosen
-      setOpenCategoryCombobox(false); // Close popover for custom selection
-      setCategoryInputSearch(''); // Clear search input
+      setSelectedCategories([]);
+      setOpenCategoryCombobox(false);
+      setCategoryInputSearch('');
     }
   }, []);
 
-  // Memoized category removal handler
   const handleRemoveCategory = useCallback((categoryToRemove) => {
     if (selectedCategories.includes(categoryToRemove)) {
       setSelectedCategories((prevSelected) =>
@@ -154,7 +141,7 @@ function AddCourseDialog({ children }) {
       });
       router.push("/workspace/edit-course/" + result.data?.courseId);
     } catch (error) {
-      console.error("Error generating course:", error);
+      //console.error("Error generating course:", error);
       toast.error("Failed to generate course.", {
         description: "An error occurred. Please try again.",
         duration: 3000,
@@ -223,7 +210,6 @@ function AddCourseDialog({ children }) {
                   />
                 </div>
 
-                {/* Number of Chapters - Dropdown with "Other" input */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Number of Chapters</label>
                   <Select onValueChange={(value) => {
@@ -260,7 +246,6 @@ function AddCourseDialog({ children }) {
                   )}
                 </div>
 
-                {/* Include Video Lessons - Switch with improved neutral state */}
                 <div className="flex items-center justify-between py-2">
                   <label className="font-medium text-[var(--foreground)]">Include video lessons?</label>
                   <Switch
@@ -270,7 +255,6 @@ function AddCourseDialog({ children }) {
                   />
                 </div>
 
-                {/* Difficulty Level */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Difficulty Level</label>
                   <Select onValueChange={(val) => handleInputChange("difficulty", val)} value={formData.difficulty} required>
@@ -285,7 +269,6 @@ function AddCourseDialog({ children }) {
                   </Select>
                 </div>
 
-                {/* Category - Searchable Combobox with Multi-Select and "Other" input */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Category (select multiple or type custom)</label>
                   <Popover open={openCategoryCombobox} onOpenChange={setOpenCategoryCombobox}>
@@ -331,9 +314,8 @@ function AddCourseDialog({ children }) {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    {/* FIX: Make PopoverContent and Command flex containers to ensure proper height distribution */}
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)] max-h-60 flex flex-col">
-                      <Command className="bg-[var(--popover)] h-full flex flex-col"> {/* Added h-full and flex flex-col */}
+                      <Command className="bg-[var(--popover)] h-full flex flex-col">
                         <CommandInput
                           placeholder="Search category..."
                           value={categoryInputSearch}
@@ -341,7 +323,6 @@ function AddCourseDialog({ children }) {
                           className="h-9 bg-[var(--input)] border-b border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                         />
                         <CommandEmpty className="py-4 text-center text-[var(--muted-foreground)]">No category found.</CommandEmpty>
-                        {/* FIX: CommandGroup now just flex-grows to take remaining space and scrolls */}
                         <CommandGroup className="flex-grow overflow-y-auto">
                           {CATEGORIES.map((category) => (
                             <CommandItem
@@ -379,9 +360,6 @@ function AddCourseDialog({ children }) {
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  {/* Custom Category Input: Only show if NO standard categories are selected
-                      AND a custom value exists or is being typed (and not matching standard)
-                  */}
                   {selectedCategories.length === 0 && (customCategoryValue.trim() || (openCategoryCombobox && categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory)) && (
                     <Input
                       placeholder="Enter custom category"

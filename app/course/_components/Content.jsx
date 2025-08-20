@@ -17,14 +17,12 @@ function Content({ courseInfo, refreshData }) {
   const completedChapters = enrollments?.completedChapters ?? [];
   const [loading, setLoading] = useState(false);
 
-  // Safely access chapter data, now including the 'value' property
-  const currentChapterData = courseContent?.[selectedChapterIndex]?.value; // Access .value here
+  const currentChapterData = courseContent?.[selectedChapterIndex]?.value;
   const videoData = currentChapterData?.youtubeVideos || [];
   const topics = currentChapterData?.courseData?.topics || [];
   const chapterName = currentChapterData?.courseData?.chapterName || 'Select a chapter';
 
-  // Check if the current chapter content is rejected or not available
-  const isContentRejected = courseContent?.[selectedChapterIndex]?.status === 'rejected'; // Check status at the higher level
+  const isContentRejected = courseContent?.[selectedChapterIndex]?.status === 'rejected';
   const isContentAvailable = currentChapterData && !isContentRejected && topics.length > 0;
 
   const markChapterAsCompleted = async () => {
@@ -62,7 +60,6 @@ function Content({ courseInfo, refreshData }) {
     }
   };
 
-  // Display message if no course content or no chapter selected
   if (!courseContent || courseContent.length === 0) {
     return (
       <div className="p-6 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md text-center text-[var(--muted-foreground)] flex flex-col items-center justify-center h-full min-h-[400px]">
@@ -73,7 +70,6 @@ function Content({ courseInfo, refreshData }) {
     );
   }
 
-  // Display message if the specific chapter content is not available or rejected
   if (!currentChapterData || isContentRejected) {
     const reason = courseContent?.[selectedChapterIndex]?.reason || 'Unknown error.';
     return (
@@ -103,7 +99,7 @@ function Content({ courseInfo, refreshData }) {
         <h2 className="text-2xl sm:text-3xl font-bold font-heading text-[var(--foreground)] animate-fade-in">
           {chapterName}
         </h2>
-        {isContentAvailable && ( // Only show mark as completed button if content is available
+        {isContentAvailable && (
           !completedChapters.includes(selectedChapterIndex) ? (
             <Button onClick={markChapterAsCompleted} disabled={loading} className="btn-primary !h-10 !text-base">
               {loading ? (
@@ -132,7 +128,6 @@ function Content({ courseInfo, refreshData }) {
         )}
       </div>
 
-      {/* Topics */}
       {isContentAvailable ? (
         <div className="space-y-6">
           {topics.map((topic, index) => (
@@ -159,7 +154,6 @@ function Content({ courseInfo, refreshData }) {
         </div>
       )}
 
-      {/* Videos */}
       <h2 className="text-xl sm:text-2xl font-bold mt-10 mb-4 flex items-center gap-2 text-[var(--foreground)] font-heading">
         Related Videos <Videotape className="text-[var(--primary)]" />
       </h2>

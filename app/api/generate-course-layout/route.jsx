@@ -1,7 +1,6 @@
-// app/api/generate-course-layout/route.js
 import { db } from '@/config/db';
 import { coursesTable } from '@/config/schema';
-import { getGeminiResponse } from '@/lib/geminiClient'; // Removed getGeminiImageResponse
+import { getGeminiResponse } from '@/lib/geminiClient';
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from 'next/server';
 
@@ -38,16 +37,13 @@ export async function POST(req) {
 
   const { courseId, ...formData } = await req.json();
   const user = await currentUser();
-
-  // Basic validation for user existence
   if (!user || !user.primaryEmailAddress?.emailAddress) {
     console.error("Course layout generation failed: User not authenticated or email missing.");
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
   let courseJson;
-  // bannerImageUrl will now store the category string
-  let bannerImageUrl = formData.category; // Directly use the category from formData
+  let bannerImageUrl = formData.category;
 
   try {
     // --- Step 1: Generate Course Layout with Gemini (Text Model) ---
@@ -91,7 +87,7 @@ export async function POST(req) {
       courseJson: JSON.stringify(courseJson),
       userEmail: user.primaryEmailAddress.emailAddress,
       cid: courseId,
-      bannerImageUrl, // This now stores the category string
+      bannerImageUrl,
     });
 
     return NextResponse.json({ courseId });

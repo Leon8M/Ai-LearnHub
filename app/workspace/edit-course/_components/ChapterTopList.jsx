@@ -20,11 +20,9 @@ function ChapterTopList({ course }) {
       <div className="space-y-10">
         {courseLayout.chapters.map((chapter, index) => (
           <div key={index} className="relative border-l-4 border-[var(--primary)] pl-6">
-            {/* Chapter marker circle */}
             <div className="absolute -left-3 top-1.5 bg-[var(--primary)] text-[var(--secondary-foreground)] rounded-full p-1.5 flex items-center justify-center shadow-md">
               <Circle className="w-4 h-4" />
             </div>
-            {/* Chapter card */}
             <div className="bg-[var(--background)] shadow-lg rounded-xl p-5 border border-[var(--border)] hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">Chapter {index + 1}: {chapter.chapterName || "Untitled Chapter"}</h3>
               <p className="text-sm text-[var(--muted-foreground)] mb-4">
@@ -37,7 +35,7 @@ function ChapterTopList({ course }) {
                       key={topicIndex}
                       className="flex items-center gap-2 bg-[var(--muted)] border border-[var(--border)] rounded-md px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors duration-200"
                     >
-                      <Dot className="text-[var(--primary)] w-5 h-5" /> {/* Larger Dot icon */}
+                      <Dot className="text-[var(--primary)] w-5 h-5" />
                       <span>{topic || "Untitled Topic"}</span>
                     </div>
                   ))
@@ -50,7 +48,7 @@ function ChapterTopList({ course }) {
         ))}
 
         <div className="flex flex-col items-center justify-center gap-3 mt-10 text-[var(--muted-foreground)]">
-          <ThumbsUp className="w-10 h-10 text-[var(--primary)] animate-bounce-slow" /> {/* Larger icon with subtle animation */}
+          <ThumbsUp className="w-10 h-10 text-[var(--primary)] animate-bounce-slow" /> 
           <p className="text-lg font-semibold">That's all for now! 🎉</p>
         </div>
       </div>

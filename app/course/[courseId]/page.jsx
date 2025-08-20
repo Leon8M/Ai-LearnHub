@@ -5,21 +5,21 @@ import ChapterSidebar from '../_components/ChapterSidebar';
 import Content from '../_components/Content';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
-import { Loader2 } from 'lucide-react'; // For loading spinner
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
-import { SelectedChapterIndexContext } from '@/context/SelectedChapterIndexContext'; // Import context
+import { SelectedChapterIndexContext } from '@/context/SelectedChapterIndexContext';
 
 function Course() {
   const { courseId } = useParams();
   const [courseInfo, setCourseInfo] = useState({});
   const [loading, setLoading] = useState(true);
-  const [selectedChapterIndex, setSelectedChapterIndex] = useState(0); // State for selected chapter
+  const [selectedChapterIndex, setSelectedChapterIndex] = useState(0);
 
   useEffect(() => {
     GetEnrolledCourseById();
-  }, [courseId]); // Added courseId to dependency array to refetch if ID changes
+  }, [courseId]);
 
   const GetEnrolledCourseById = async () => {
     setLoading(true);
@@ -27,20 +27,19 @@ function Course() {
       const result = await axios.get('/api/enroll?courseId=' + courseId);
       let fetchedCourseInfo = result.data;
 
-      // Ensure courseContent is parsed if it's a string (Drizzle's JSON type can sometimes return stringified JSON)
+
       if (fetchedCourseInfo?.courses?.courseContent && typeof fetchedCourseInfo.courses.courseContent === 'string') {
         try {
           fetchedCourseInfo.courses.courseContent = JSON.parse(fetchedCourseInfo.courses.courseContent);
         } catch (parseError) {
-          console.error("Failed to parse courseContent JSON:", parseError);
-          // Fallback to an empty array if parsing fails to prevent further errors
+          //console.error("Failed to parse courseContent JSON:", parseError);
+
           fetchedCourseInfo.courses.courseContent = [];
         }
       }
       setCourseInfo(fetchedCourseInfo);
     } catch (error) {
       console.error("Error fetching enrolled course:", error);
-      // Handle error gracefully, e.g., show a message to the user
     } finally {
       setLoading(false);
     }
@@ -49,10 +48,8 @@ function Course() {
   return (
     <SelectedChapterIndexContext.Provider value={{ selectedChapterIndex, setSelectedChapterIndex }}>
       <div className="bg-[var(--background)] min-h-screen">
-        {/* MainHeader is outside the main content area */}
         <MainHeader hideSide={true} courseId={courseId} /> 
         
-        {/* Mobile-only show chapter button */}
         <div className="md:hidden p-4 bg-[var(--background)] border-b border-[var(--border)]">
           <Sheet>
             <SheetTrigger asChild>
@@ -73,7 +70,6 @@ function Course() {
             </div>
           ) : (
             <>
-              {/* Desktop Sidebar */}
               <div className="hidden md:block w-full md:w-64 lg:w-80 flex-shrink-0">
                 <ChapterSidebar courseInfo={courseInfo} />
               </div>

@@ -1,4 +1,3 @@
-// /api/user/watch-ad-token/route.js
 import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/config/db';
 import { usersTable, tokenTransactionsTable } from '@/config/schema';

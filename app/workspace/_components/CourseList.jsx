@@ -5,9 +5,9 @@ import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import AddCourseDialog from './AddCourseDialog';
 import CourseCard from './CourseCard';
-// import { Skeleton } from '@/components/ui/skeleton'; // Although replaced, keeping import for context
+// import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react'; // For loading spinner
+import { Loader2 } from 'lucide-react';
 
 function CourseList() {
   const [courseList, setCourseList] = useState([]);
@@ -15,17 +15,16 @@ function CourseList() {
   const { user } = useUser();
 
   const GetCourseList = async () => {
-    setLoading(true); // Set loading true before fetching
+    setLoading(true);
     try {
       const response = await axios.get('/api/courses');
       
-      // Process courseJson and courseContent if they are strings
       const processedCourses = response.data.map(course => {
         if (course.courseJson && typeof course.courseJson === 'string') {
           try {
             course.courseJson = JSON.parse(course.courseJson);
           } catch (e) {
-            console.error("Failed to parse courseJson for course:", course.cid, e);
+            //console.error("Failed to parse courseJson for course:", course.cid, e);
             course.courseJson = {};
           }
         } else if (!course.courseJson) {
@@ -36,7 +35,7 @@ function CourseList() {
           try {
             course.courseContent = JSON.parse(course.courseContent);
           } catch (e) {
-            console.error("Failed to parse courseContent for course:", course.cid, e);
+            //console.error("Failed to parse courseContent for course:", course.cid, e);
             course.courseContent = [];
           }
         } else if (!course.courseContent) {
@@ -48,21 +47,18 @@ function CourseList() {
       setCourseList(processedCourses);
     } catch (error) {
       console.error('Failed to fetch course list', error);
-      // Optionally, set an error state to display a message to the user
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Fetch courses when user object is available
     if (user) {
       GetCourseList();
     }
   }, [user]);
 
   return (
-    // Added max-w-7xl, mx-auto, and responsive px classes for better layout control
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-md'>
       <h2 className='text-3xl font-bold font-heading text-[var(--foreground)] mb-6'>Your Courses</h2>
 
