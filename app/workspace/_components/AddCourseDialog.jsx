@@ -43,7 +43,6 @@ function AddCourseDialog({ children }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // --- NEW: Control Dialog open state explicitly ---
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // State for form fields
@@ -66,20 +65,6 @@ function AddCourseDialog({ children }) {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [customCategoryValue, setCustomCategoryValue] = useState('');
 
-  // --- OPTIMIZATION 1: Memoize filtered categories for Command component ---
-  // This reduces the number of CommandItem components React has to re-render
-  // when you type in the search input.
-  const filteredCategories = useMemo(() => {
-    if (!categoryInputSearch) {
-      return CATEGORIES;
-    }
-    const lowercasedSearch = categoryInputSearch.toLowerCase().trim();
-    return CATEGORIES.filter(cat =>
-      cat.toLowerCase().includes(lowercasedSearch)
-    );
-  }, [categoryInputSearch]);
-
-  // Memoize this check as well
   const isSearchMatchingExistingCategory = useMemo(() => {
     return CATEGORIES.some(cat =>
       cat.toLowerCase() === categoryInputSearch.toLowerCase().trim()
@@ -108,15 +93,16 @@ function AddCourseDialog({ children }) {
     setFormData((prev) => ({ ...prev, category: allCategories.join(', ') }));
   }, [selectedCategories, customCategoryValue]);
 
-  // Memoized input change handler (remains the same, already good)
+  // Memoized input change handler
   const handleInputChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  // Memoized category selection handler (remains the same, already good)
+  // Memoized category selection handler
   const handleCategorySelect = useCallback((categoryValue) => {
+    // If selecting an existing category from CATEGORIES
     if (CATEGORIES.includes(categoryValue)) {
-      setCustomCategoryValue('');
+      setCustomCategoryValue(''); // Clear custom value if a predefined category is selected
       setSelectedCategories((prevSelected) => {
         const isSelected = prevSelected.includes(categoryValue);
         if (isSelected) {
@@ -125,21 +111,25 @@ function AddCourseDialog({ children }) {
           return [...prevSelected, categoryValue];
         }
       });
-      setCategoryInputSearch('');
-      setOpenCategoryCombobox(false);
+      setCategoryInputSearch(''); // Clear search input after selection
+      // Do NOT close popover automatically for multi-select, unless "Other" is selected (which isn't here now).
+      // If you want it to close, you can set `setOpenCategoryCombobox(false);`
     } else {
+      // This path is for adding the "custom" value from the CommandItem
       setCustomCategoryValue(categoryValue);
-      setSelectedCategories([]);
-      setOpenCategoryCombobox(false);
-      setCategoryInputSearch('');
+      setSelectedCategories([]); // Clear standard selections when a custom one is chosen
+      setOpenCategoryCombobox(false); // Close popover for custom selection
+      setCategoryInputSearch(''); // Clear search input
     }
   }, []);
 
-  // Memoized category removal handler (remains the same, already good)
+  // Memoized category removal handler
   const handleRemoveCategory = useCallback((categoryToRemove) => {
-    setSelectedCategories((prevSelected) =>
-      prevSelected.filter((c) => c !== categoryToRemove)
-    );
+    if (selectedCategories.includes(categoryToRemove)) {
+      setSelectedCategories((prevSelected) =>
+        prevSelected.filter((c) => c !== categoryToRemove)
+      );
+    }
     if (customCategoryValue === categoryToRemove) {
       setCustomCategoryValue('');
     }
@@ -174,10 +164,6 @@ function AddCourseDialog({ children }) {
     }
   };
 
-  // --- NEW OPTIMIZATION 2: Reset form state when dialog closes ---
-  // This is crucial. When the dialog is closed, it unmounts and remounts
-  // when opened again, ensuring a fresh state and preventing stale data
-  // or accumulation of performance issues from previous interactions.
   const resetFormState = useCallback(() => {
     setFormData({
       name: "",
@@ -192,11 +178,9 @@ function AddCourseDialog({ children }) {
     setCategoryInputSearch('');
     setSelectedCategories([]);
     setCustomCategoryValue('');
-  }, []); // Dependencies are stable (set functions)
+  }, []);
 
-  // Use the dialog's open state to reset form when it closes
   useEffect(() => {
-    // Only reset if the dialog is closing
     if (!isDialogOpen) {
       resetFormState();
     }
@@ -204,15 +188,9 @@ function AddCourseDialog({ children }) {
 
 
   return (
-    // --- NEW OPTIMIZATION 3: Conditionally render DialogContent ---
-    // The Dialog component itself should manage its `open` state.
-    // We pass `isDialogOpen` to the `Dialog` component directly.
-    // The `DialogContent` is then only rendered when `isDialogOpen` is true.
-    // This means all inputs, selects, and comboboxes are completely unmounted
-    // from the DOM when the dialog is closed, and re-mounted fresh when opened.
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      {isDialogOpen && ( // Only render DialogContent if dialog is open
+      {isDialogOpen && (
         <DialogContent className="
           backdrop-blur-md bg-[var(--card)]/90 border border-[var(--border)] shadow-2xl
           rounded-2xl p-6 text-[var(--foreground)]
@@ -229,7 +207,7 @@ function AddCourseDialog({ children }) {
                   <Input
                     placeholder="Enter course name, e.g., 'Introduction to Quantum Physics'"
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    value={formData.name} // IMPORTANT: Make inputs controlled
+                    value={formData.name}
                     className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                     required
                   />
@@ -240,7 +218,7 @@ function AddCourseDialog({ children }) {
                   <Textarea
                     placeholder="Provide a brief description of what the course will cover."
                     onChange={(e) => handleInputChange("description", e.target.value)}
-                    value={formData.description} // IMPORTANT: Make inputs controlled
+                    value={formData.description}
                     className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                   />
                 </div>
@@ -273,7 +251,7 @@ function AddCourseDialog({ children }) {
                     <Input
                       type="number"
                       placeholder="Enter custom number of chapters"
-                      value={customChapters} // IMPORTANT: Make inputs controlled
+                      value={customChapters}
                       onChange={(e) => setCustomChapters(e.target.value)}
                       className="mt-2 bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                       min="1"
@@ -353,8 +331,9 @@ function AddCourseDialog({ children }) {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)] max-h-60 overflow-y-auto">
-                      <Command className="bg-[var(--popover)]">
+                    {/* FIX: Make PopoverContent and Command flex containers to ensure proper height distribution */}
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)] max-h-60 flex flex-col">
+                      <Command className="bg-[var(--popover)] h-full flex flex-col"> {/* Added h-full and flex flex-col */}
                         <CommandInput
                           placeholder="Search category..."
                           value={categoryInputSearch}
@@ -362,9 +341,9 @@ function AddCourseDialog({ children }) {
                           className="h-9 bg-[var(--input)] border-b border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                         />
                         <CommandEmpty className="py-4 text-center text-[var(--muted-foreground)]">No category found.</CommandEmpty>
-                        <CommandGroup className="max-h-[calc(var(--radix-popover-content-available-height) - 40px)] overflow-y-auto">
-                          {/* --- OPTIMIZATION: Render filtered categories --- */}
-                          {filteredCategories.map((category) => (
+                        {/* FIX: CommandGroup now just flex-grows to take remaining space and scrolls */}
+                        <CommandGroup className="flex-grow overflow-y-auto">
+                          {CATEGORIES.map((category) => (
                             <CommandItem
                               key={category}
                               value={category}
@@ -380,9 +359,6 @@ function AddCourseDialog({ children }) {
                               {category}
                             </CommandItem>
                           ))}
-                          {/* Show "Add Custom" option only if search term is not empty
-                              AND it doesn't match an existing standard category
-                          */}
                           {categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory && (
                             <CommandItem
                               key={`custom-add-${categoryInputSearch.trim()}`}
@@ -409,7 +385,7 @@ function AddCourseDialog({ children }) {
                   {selectedCategories.length === 0 && (customCategoryValue.trim() || (openCategoryCombobox && categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory)) && (
                     <Input
                       placeholder="Enter custom category"
-                      value={customCategoryValue} // IMPORTANT: Make inputs controlled
+                      value={customCategoryValue}
                       onChange={(e) => setCustomCategoryValue(e.target.value)}
                       className="mt-2 bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                       required={selectedCategories.length === 0 && !customCategoryValue.trim()}
