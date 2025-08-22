@@ -71,7 +71,8 @@ export const metadata = {
   },
 
   icons: {
-    icon: "/logo-main.png",
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 
