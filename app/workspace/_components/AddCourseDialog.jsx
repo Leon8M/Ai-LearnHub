@@ -20,11 +20,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkle, Check, ChevronsUpDown, XCircle } from "lucide-react";
+import { Loader2, Sparkle, Check, ChevronsUpDown, XCircle, PlusCircle } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+// --- MODIFIED: Added CommandList for proper scrolling and keyboard navigation ---
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 
@@ -41,7 +42,6 @@ const CHAPTER_OPTIONS = [
 function AddCourseDialog({ children }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -58,8 +58,9 @@ function AddCourseDialog({ children }) {
 
   const [openCategoryCombobox, setOpenCategoryCombobox] = useState(false);
   const [categoryInputSearch, setCategoryInputSearch] = useState('');
+  
+  // --- REFACTORED: Single state for all categories (predefined and custom) ---
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [customCategoryValue, setCustomCategoryValue] = useState('');
 
   const isSearchMatchingExistingCategory = useMemo(() => {
     return CATEGORIES.some(cat =>
@@ -78,53 +79,38 @@ function AddCourseDialog({ children }) {
     setFormData((prev) => ({ ...prev, chapters: chaptersNum }));
   }, [selectedChapterOption, customChapters]);
 
+  // --- REFACTORED: Simplified effect using the single unified state ---
   useEffect(() => {
-    let allCategories = [...selectedCategories];
-    const trimmedCustom = customCategoryValue.trim();
-    if (trimmedCustom && !allCategories.includes(trimmedCustom)) {
-      allCategories.push(trimmedCustom);
-    }
-    setFormData((prev) => ({ ...prev, category: allCategories.join(', ') }));
-  }, [selectedCategories, customCategoryValue]);
+    setFormData((prev) => ({ ...prev, category: selectedCategories.join(', ') }));
+  }, [selectedCategories]);
 
   const handleInputChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
+  // --- REFACTORED: Unified handler for both predefined and custom categories ---
   const handleCategorySelect = useCallback((categoryValue) => {
-    if (CATEGORIES.includes(categoryValue)) {
-      setCustomCategoryValue('');
-      setSelectedCategories((prevSelected) => {
-        const isSelected = prevSelected.includes(categoryValue);
-        if (isSelected) {
-          return prevSelected.filter((c) => c !== categoryValue);
-        } else {
-          return [...prevSelected, categoryValue];
-        }
-      });
-      setCategoryInputSearch('');
-    } else {
-      setCustomCategoryValue(categoryValue);
-      setSelectedCategories([]);
-      setOpenCategoryCombobox(false);
-      setCategoryInputSearch('');
-    }
+    setSelectedCategories((currentCategories) => {
+      const newCategories = new Set(currentCategories);
+      if (newCategories.has(categoryValue)) {
+        newCategories.delete(categoryValue);
+      } else {
+        newCategories.add(categoryValue);
+      }
+      return Array.from(newCategories);
+    });
+    setCategoryInputSearch(''); // Clear search input after selection
   }, []);
 
+  // --- REFACTORED: Simplified remove handler for the unified state ---
   const handleRemoveCategory = useCallback((categoryToRemove) => {
-    if (selectedCategories.includes(categoryToRemove)) {
-      setSelectedCategories((prevSelected) =>
-        prevSelected.filter((c) => c !== categoryToRemove)
-      );
-    }
-    if (customCategoryValue === categoryToRemove) {
-      setCustomCategoryValue('');
-    }
-  }, [selectedCategories, customCategoryValue]);
+    setSelectedCategories((prevSelected) =>
+      prevSelected.filter((c) => c !== categoryToRemove)
+    );
+  }, []);
 
   const onGenerateCourse = async () => {
-    const finalCategory = formData.category.trim();
-    if (!formData.name || formData.chapters <= 0 || !formData.difficulty || !finalCategory) {
+    if (!formData.name || formData.chapters <= 0 || !formData.difficulty || selectedCategories.length === 0) {
       toast.error("Please fill in all required fields!", {
         description: "Course Name, Chapters, Difficulty, and at least one Category are required.",
         duration: 3000,
@@ -141,7 +127,6 @@ function AddCourseDialog({ children }) {
       });
       router.push("/workspace/edit-course/" + result.data?.courseId);
     } catch (error) {
-      //console.error("Error generating course:", error);
       toast.error("Failed to generate course.", {
         description: "An error occurred. Please try again.",
         duration: 3000,
@@ -151,6 +136,7 @@ function AddCourseDialog({ children }) {
     }
   };
 
+  // --- REFACTORED: Simplified form reset logic ---
   const resetFormState = useCallback(() => {
     setFormData({
       name: "",
@@ -164,7 +150,6 @@ function AddCourseDialog({ children }) {
     setCustomChapters('');
     setCategoryInputSearch('');
     setSelectedCategories([]);
-    setCustomCategoryValue('');
   }, []);
 
   useEffect(() => {
@@ -172,7 +157,6 @@ function AddCourseDialog({ children }) {
       resetFormState();
     }
   }, [isDialogOpen, resetFormState]);
-
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -189,45 +173,42 @@ function AddCourseDialog({ children }) {
             </DialogTitle>
             <DialogDescription asChild>
               <div className="flex flex-col gap-6 mt-4 text-sm text-[var(--muted-foreground)]">
+                {/* --- Course Name Input (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Course Name</label>
                   <Input
-                    placeholder="Enter course name, e.g., 'Introduction to Quantum Physics'"
+                    placeholder="e.g., 'Introduction to Quantum Physics'"
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     value={formData.name}
                     className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                     required
                   />
                 </div>
-
+                
+                {/* --- Course Description Textarea (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Course Description (optional)</label>
                   <Textarea
-                    placeholder="Provide a brief description of what the course will cover."
+                    placeholder="Provide a brief description of the course."
                     onChange={(e) => handleInputChange("description", e.target.value)}
                     value={formData.description}
                     className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                   />
                 </div>
-
+                
+                {/* --- Number of Chapters Select (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Number of Chapters</label>
                   <Select onValueChange={(value) => {
                     setSelectedChapterOption(value);
-                    if (value !== 'other') {
-                      setCustomChapters('');
-                    }
+                    if (value !== 'other') setCustomChapters('');
                   }} value={selectedChapterOption} required>
                     <SelectTrigger className="w-full bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]">
                       <SelectValue placeholder="Select number of chapters" />
                     </SelectTrigger>
                     <SelectContent className="bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
                       {CHAPTER_OPTIONS.map((option) => (
-                        <SelectItem
-                          key={option.value}
-                          value={String(option.value)}
-                          className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
-                        >
+                        <SelectItem key={option.value} value={String(option.value)} className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]">
                           {option.label}
                         </SelectItem>
                       ))}
@@ -246,6 +227,7 @@ function AddCourseDialog({ children }) {
                   )}
                 </div>
 
+                {/* --- Include Video Switch (No changes) --- */}
                 <div className="flex items-center justify-between py-2">
                   <label className="font-medium text-[var(--foreground)]">Include video lessons?</label>
                   <Switch
@@ -255,6 +237,7 @@ function AddCourseDialog({ children }) {
                   />
                 </div>
 
+                {/* --- Difficulty Level Select (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Difficulty Level</label>
                   <Select onValueChange={(val) => handleInputChange("difficulty", val)} value={formData.difficulty} required>
@@ -269,6 +252,7 @@ function AddCourseDialog({ children }) {
                   </Select>
                 </div>
 
+                {/* --- REFACTORED: Category Combobox --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Category (select multiple or type custom)</label>
                   <Popover open={openCategoryCombobox} onOpenChange={setOpenCategoryCombobox}>
@@ -280,11 +264,12 @@ function AddCourseDialog({ children }) {
                         className="w-full justify-between bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--input)]/80 focus:ring-[var(--ring)] focus:border-[var(--primary)] min-h-[40px] flex-wrap h-auto"
                       >
                         <div className="flex flex-wrap gap-1">
+                          {/* --- REFACTORED: Simplified display logic for selected categories --- */}
                           {selectedCategories.length > 0 ? (
                             selectedCategories.map((category) => (
                               <span
                                 key={category}
-                                className="flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-full px-2 py-0.5 text-xs"
+                                className="flex items-center gap-1.5 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-full px-2 py-0.5 text-xs"
                               >
                                 {category}
                                 <XCircle
@@ -296,85 +281,69 @@ function AddCourseDialog({ children }) {
                                 />
                               </span>
                             ))
-                          ) : customCategoryValue.trim() ? (
-                            <span className="flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-full px-2 py-0.5 text-xs">
-                              {customCategoryValue} (Custom)
-                              <XCircle
-                                className="w-3 h-3 cursor-pointer hover:text-[var(--destructive)]"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCustomCategoryValue('');
-                                }}
-                              />
-                            </span>
                           ) : (
-                            <span className="text-[var(--muted-foreground)]">Select category(s)...</span>
+                            <span className="text-[var(--muted-foreground)]">Select or add categories...</span>
                           )}
                         </div>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)] max-h-60 flex flex-col">
-                      <Command className="bg-[var(--popover)] h-full flex flex-col">
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
+                      <Command className="bg-[var(--popover)]">
                         <CommandInput
-                          placeholder="Search category..."
+                          placeholder="Search or add category..."
                           value={categoryInputSearch}
                           onValueChange={setCategoryInputSearch}
                           className="h-9 bg-[var(--input)] border-b border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                         />
-                        <CommandEmpty className="py-4 text-center text-[var(--muted-foreground)]">No category found.</CommandEmpty>
-                        <CommandGroup className="flex-grow overflow-y-auto">
-                          {CATEGORIES.map((category) => (
-                            <CommandItem
-                              key={category}
-                              value={category}
-                              onSelect={() => handleCategorySelect(category)}
-                              className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer"
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedCategories.includes(category) ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {category}
-                            </CommandItem>
-                          ))}
-                          {categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory && (
-                            <CommandItem
-                              key={`custom-add-${categoryInputSearch.trim()}`}
-                              value={`_custom_add_${categoryInputSearch.trim()}`}
-                              onSelect={() => handleCategorySelect(categoryInputSearch.trim())}
-                              className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer font-semibold text-[var(--primary)] mt-1"
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  customCategoryValue.toLowerCase() === categoryInputSearch.toLowerCase().trim() ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              Add "{categoryInputSearch.trim()}" as Custom
-                            </CommandItem>
-                          )}
-                        </CommandGroup>
+                        <CommandEmpty className="py-4 text-center text-sm text-[var(--muted-foreground)]">
+                          No category found. Type to add a custom one.
+                        </CommandEmpty>
+                        {/* --- FIXED: Added CommandList for scrolling and keyboard navigation --- */}
+                        <CommandList>
+                          <CommandGroup>
+                            {CATEGORIES.map((category) => (
+                              <CommandItem
+                                key={category}
+                                value={category}
+                                onSelect={() => handleCategorySelect(category)}
+                                className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedCategories.includes(category) ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {category}
+                              </CommandItem>
+                            ))}
+                            {/* --- REFACTORED: Improved "Add Custom" logic --- */}
+                            {categoryInputSearch.trim() && !isSearchMatchingExistingCategory && !selectedCategories.includes(categoryInputSearch.trim()) && (
+                              <CommandItem
+                                key={`custom-add-${categoryInputSearch.trim()}`}
+                                value={categoryInputSearch.trim()}
+                                onSelect={() => handleCategorySelect(categoryInputSearch.trim())}
+                                className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer font-semibold text-[var(--primary)] mt-1"
+                              >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add "{categoryInputSearch.trim()}"
+                              </CommandItem>
+                            )}
+                          </CommandGroup>
+                        </CommandList>
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  {selectedCategories.length === 0 && (customCategoryValue.trim() || (openCategoryCombobox && categoryInputSearch.trim() !== '' && !isSearchMatchingExistingCategory)) && (
-                    <Input
-                      placeholder="Enter custom category"
-                      value={customCategoryValue}
-                      onChange={(e) => setCustomCategoryValue(e.target.value)}
-                      className="mt-2 bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
-                      required={selectedCategories.length === 0 && !customCategoryValue.trim()}
-                    />
-                  )}
+                  {/* --- REMOVED: Redundant custom category input field --- */}
                 </div>
 
+                {/* --- Generate Course Button --- */}
                 <div className="flex justify-end pt-4">
                   <Button
                     onClick={onGenerateCourse}
-                    disabled={loading || !formData.name || formData.chapters <= 0 || !formData.difficulty || (!selectedCategories.length && !customCategoryValue.trim())}
+                    // --- REFACTORED: Simplified disabled check ---
+                    disabled={loading || !formData.name || formData.chapters <= 0 || !formData.difficulty || selectedCategories.length === 0}
                     className="btn-primary gap-2 !text-base !h-12 !px-6"
                   >
                     {loading ? (
