@@ -24,12 +24,10 @@ import { Loader2, Sparkle, Check, ChevronsUpDown, XCircle, PlusCircle } from "lu
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-// --- MODIFIED: Added CommandList for proper scrolling and keyboard navigation ---
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 
-// --- Import CATEGORIES from external file ---
 import { CATEGORIES } from '@/constants/categories';
 
 const CHAPTER_OPTIONS = [
@@ -59,7 +57,6 @@ function AddCourseDialog({ children }) {
   const [openCategoryCombobox, setOpenCategoryCombobox] = useState(false);
   const [categoryInputSearch, setCategoryInputSearch] = useState('');
   
-  // --- REFACTORED: Single state for all categories (predefined and custom) ---
   const [selectedCategories, setSelectedCategories] = useState([]);
 
   const isSearchMatchingExistingCategory = useMemo(() => {
@@ -79,7 +76,6 @@ function AddCourseDialog({ children }) {
     setFormData((prev) => ({ ...prev, chapters: chaptersNum }));
   }, [selectedChapterOption, customChapters]);
 
-  // --- REFACTORED: Simplified effect using the single unified state ---
   useEffect(() => {
     setFormData((prev) => ({ ...prev, category: selectedCategories.join(', ') }));
   }, [selectedCategories]);
@@ -88,7 +84,6 @@ function AddCourseDialog({ children }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  // --- REFACTORED: Unified handler for both predefined and custom categories ---
   const handleCategorySelect = useCallback((categoryValue) => {
     setSelectedCategories((currentCategories) => {
       const newCategories = new Set(currentCategories);
@@ -99,15 +94,15 @@ function AddCourseDialog({ children }) {
       }
       return Array.from(newCategories);
     });
-    setCategoryInputSearch(''); // Clear search input after selection
+    setCategoryInputSearch('');
   }, []);
 
-  // --- REFACTORED: Simplified remove handler for the unified state ---
-  const handleRemoveCategory = useCallback((categoryToRemove) => {
+  // --- FIXED: Simplified the remove handler to prevent potential stale state issues ---
+  const handleRemoveCategory = (categoryToRemove) => {
     setSelectedCategories((prevSelected) =>
       prevSelected.filter((c) => c !== categoryToRemove)
     );
-  }, []);
+  };
 
   const onGenerateCourse = async () => {
     if (!formData.name || formData.chapters <= 0 || !formData.difficulty || selectedCategories.length === 0) {
@@ -136,7 +131,6 @@ function AddCourseDialog({ children }) {
     }
   };
 
-  // --- REFACTORED: Simplified form reset logic ---
   const resetFormState = useCallback(() => {
     setFormData({
       name: "",
@@ -173,7 +167,7 @@ function AddCourseDialog({ children }) {
             </DialogTitle>
             <DialogDescription asChild>
               <div className="flex flex-col gap-6 mt-4 text-sm text-[var(--muted-foreground)]">
-                {/* --- Course Name Input (No changes) --- */}
+                {/* --- Forms sections (no changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Course Name</label>
                   <Input
@@ -184,8 +178,6 @@ function AddCourseDialog({ children }) {
                     required
                   />
                 </div>
-                
-                {/* --- Course Description Textarea (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Course Description (optional)</label>
                   <Textarea
@@ -195,8 +187,6 @@ function AddCourseDialog({ children }) {
                     className="bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                   />
                 </div>
-                
-                {/* --- Number of Chapters Select (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Number of Chapters</label>
                   <Select onValueChange={(value) => {
@@ -226,8 +216,6 @@ function AddCourseDialog({ children }) {
                     />
                   )}
                 </div>
-
-                {/* --- Include Video Switch (No changes) --- */}
                 <div className="flex items-center justify-between py-2">
                   <label className="font-medium text-[var(--foreground)]">Include video lessons?</label>
                   <Switch
@@ -236,8 +224,6 @@ function AddCourseDialog({ children }) {
                     className="data-[state=unchecked]:bg-[var(--muted-foreground)] data-[state=checked]:bg-[var(--primary)]"
                   />
                 </div>
-
-                {/* --- Difficulty Level Select (No changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Difficulty Level</label>
                   <Select onValueChange={(val) => handleInputChange("difficulty", val)} value={formData.difficulty} required>
@@ -251,8 +237,8 @@ function AddCourseDialog({ children }) {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* --- REFACTORED: Category Combobox --- */}
+                
+                {/* --- Category Combobox Section --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Category (select multiple or type custom)</label>
                   <Popover open={openCategoryCombobox} onOpenChange={setOpenCategoryCombobox}>
@@ -264,7 +250,6 @@ function AddCourseDialog({ children }) {
                         className="w-full justify-between bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--input)]/80 focus:ring-[var(--ring)] focus:border-[var(--primary)] min-h-[40px] flex-wrap h-auto"
                       >
                         <div className="flex flex-wrap gap-1">
-                          {/* --- REFACTORED: Simplified display logic for selected categories --- */}
                           {selectedCategories.length > 0 ? (
                             selectedCategories.map((category) => (
                               <span
@@ -272,13 +257,16 @@ function AddCourseDialog({ children }) {
                                 className="flex items-center gap-1.5 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-full px-2 py-0.5 text-xs"
                               >
                                 {category}
-                                <XCircle
-                                  className="w-3 h-3 cursor-pointer hover:text-[var(--destructive)]"
+                                <button
+                                  type="button"
+                                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--primary)] focus:ring-[var(--primary-foreground)]"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleRemoveCategory(category);
                                   }}
-                                />
+                                >
+                                  <XCircle className="w-3.5 h-3.5 cursor-pointer hover:opacity-80" />
+                                </button>
                               </span>
                             ))
                           ) : (
@@ -299,8 +287,10 @@ function AddCourseDialog({ children }) {
                         <CommandEmpty className="py-4 text-center text-sm text-[var(--muted-foreground)]">
                           No category found. Type to add a custom one.
                         </CommandEmpty>
-                        {/* --- FIXED: Added CommandList for scrolling and keyboard navigation --- */}
-                        <CommandList>
+                        <CommandList 
+                          // --- FIXED: This stops the scroll event from bubbling up to the dialog ---
+                          onWheel={(e) => e.stopPropagation()}
+                        >
                           <CommandGroup>
                             {CATEGORIES.map((category) => (
                               <CommandItem
@@ -318,7 +308,6 @@ function AddCourseDialog({ children }) {
                                 {category}
                               </CommandItem>
                             ))}
-                            {/* --- REFACTORED: Improved "Add Custom" logic --- */}
                             {categoryInputSearch.trim() && !isSearchMatchingExistingCategory && !selectedCategories.includes(categoryInputSearch.trim()) && (
                               <CommandItem
                                 key={`custom-add-${categoryInputSearch.trim()}`}
@@ -335,14 +324,12 @@ function AddCourseDialog({ children }) {
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  {/* --- REMOVED: Redundant custom category input field --- */}
                 </div>
 
                 {/* --- Generate Course Button --- */}
                 <div className="flex justify-end pt-4">
                   <Button
                     onClick={onGenerateCourse}
-                    // --- REFACTORED: Simplified disabled check ---
                     disabled={loading || !formData.name || formData.chapters <= 0 || !formData.difficulty || selectedCategories.length === 0}
                     className="btn-primary gap-2 !text-base !h-12 !px-6"
                   >
