@@ -17,7 +17,7 @@ export async function GET(request) {
 
     if (courseId) {
         const result = await db.select().from(coursesTable).where(eq(coursesTable.cid, courseId));
-        console.log("Course details for specific course:", result);d
+        console.log("Course details for specific course:", result);
         return NextResponse.json(result[0] ? JSON.parse(JSON.stringify(result[0])) : null); 
     } else {
         const result = await db.select().from(coursesTable)
