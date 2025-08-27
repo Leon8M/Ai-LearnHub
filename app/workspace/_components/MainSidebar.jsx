@@ -21,6 +21,7 @@ import {
   Sparkles,
   HelpCircle,
   Settings2Icon,
+  BookCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
