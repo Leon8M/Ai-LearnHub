@@ -97,7 +97,7 @@ function AddCourseDialog({ children }) {
     setCategoryInputSearch('');
   }, []);
 
-  // --- FIXED: Simplified the remove handler to prevent potential stale state issues ---
+  // --- FIXED: Simplified the remove handler to prevent potential stale state issues, I hated this ---
   const handleRemoveCategory = (categoryToRemove) => {
     setSelectedCategories((prevSelected) =>
       prevSelected.filter((c) => c !== categoryToRemove)
@@ -167,7 +167,6 @@ function AddCourseDialog({ children }) {
             </DialogTitle>
             <DialogDescription asChild>
               <div className="flex flex-col gap-6 mt-4 text-sm text-[var(--muted-foreground)]">
-                {/* --- Forms sections (no changes) --- */}
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Course Name</label>
                   <Input
@@ -288,7 +287,7 @@ function AddCourseDialog({ children }) {
                           No category found. Type to add a custom one.
                         </CommandEmpty>
                         <CommandList 
-                          // --- FIXED: This stops the scroll event from bubbling up to the dialog ---
+                          // --- FIXED: This stops the scroll event from bubbling up to the dialog. tool longer than I would have liked ---
                           onWheel={(e) => e.stopPropagation()}
                         >
                           <CommandGroup>
