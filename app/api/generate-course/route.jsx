@@ -65,6 +65,7 @@ export async function POST(request) {
 
         const response = await getGeminiResponse(contents);
         const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
         if (!rawText) throw new Error("Empty Gemini response");
 
         let cleaned = rawText;
@@ -73,10 +74,8 @@ export async function POST(request) {
         if (jsonMatch && jsonMatch[1]) {
             cleaned = jsonMatch[1];
         }
-
+        
         cleaned = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
-
-        cleaned = cleaned.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");e
 
         const parsedContent = JSON.parse(cleaned);
         const youtubeVideos = await getYoutubeVideos(parsedContent.chapterName || chapter.chapterName);
@@ -84,8 +83,6 @@ export async function POST(request) {
         return { status: "fulfilled", value: { youtubeVideos, courseData: parsedContent } };
       } catch (error) {
         console.error("JSON/Chapter generation failed for chapter:", chapter.chapterName, "Error:", error.message);
-        console.error("Raw LLM response:", rawText); 
-        console.error("Cleaned content before parse:", cleaned);
         return { status: "rejected", reason: `Chapter generation failed: ${error.message}` };
       }
     });
