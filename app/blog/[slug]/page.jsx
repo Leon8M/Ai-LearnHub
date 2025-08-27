@@ -1,14 +1,12 @@
-// app/blog/[slug]/page.jsx
-
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter'; // npm install gray-matter
-import { MDXRemote } from 'next-mdx-remote/rsc'; // npm install next-mdx-remote
+import matter from 'gray-matter'; 
+import { MDXRemote } from 'next-mdx-remote/rsc';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { customComponents } from '@/components/mdx-components'; // Create this file (Step 6)
-import { generateBlogMetadata } from '@/lib/seo'; // Create this file (Step 7)
-import { ChevronLeft } from 'lucide-react'; // Example icon for back button
+import { customComponents } from '@/components/mdx-components';
+import { generateBlogMetadata } from '@/lib/seo';
+import { ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -25,20 +23,20 @@ export async function generateStaticParams() {
 async function getPost(slug) {
   try {
     const postsDirectory = path.join(process.cwd(), 'content/blog');
-    const fullPath = path.join(postsDirectory, `${slug}.mdx`); // Supports .mdx and .md
+    const fullPath = path.join(postsDirectory, `${slug}.mdx`);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
     const { data, content } = matter(fileContents);
     return { data, content };
   } catch (error) {
     console.error(`Failed to load blog post: ${slug}`, error);
-    notFound(); // Next.js utility to show 404 page
+    notFound();
   }
 }
 
 // --- Generate dynamic metadata for each blog post ---
 export async function generateMetadata({ params }) {
   const { data } = await getPost(params.slug);
-  return generateBlogMetadata(data, params.slug); // Using a helper function for consistent SEO
+  return generateBlogMetadata(data, params.slug);
 }
 
 
@@ -49,9 +47,9 @@ export default async function BlogPostPage({ params }) {
   const headings = content.match(/^(#+)\s(.+)$/gm)?.map(heading => {
     const level = heading.match(/^#+/)[0].length;
     const text = heading.replace(/^#+\s/, '');
-    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-*|-*$/g, ''); // Generate slug-like ID
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-*|-*$/g, '');
     return { level, text, id };
-  }).filter(h => h.level === 2 || h.level === 3); // Only include H2 and H3
+  }).filter(h => h.level === 2 || h.level === 3);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

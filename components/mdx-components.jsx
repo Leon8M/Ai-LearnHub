@@ -1,8 +1,5 @@
-// components/mdx-components.jsx
-
-// You can import your UI components here
 import Image from 'next/image';
-import { Button } from '@/components/ui/button'; // Example
+import { Button } from '@/components/ui/button'; 
 import Link from 'next/link';
 
 export const customComponents = {
@@ -14,7 +11,5 @@ export const customComponents = {
   ul: (props) => <ul className="list-disc pl-5 my-4" {...props} />,
   ol: (props) => <ol className="list-decimal pl-5 my-4" {...props} />,
   li: (props) => <li className="mb-2" {...props} />,
-  img: (props) => <Image className="rounded-lg my-6" {...props} />, // Use Next.js Image
-  // Example for embedding a custom React component:
-  // MyCustomComponent: (props) => <Button {...props} />,
+  img: (props) => <Image className="rounded-lg my-6" {...props} />,
 };
