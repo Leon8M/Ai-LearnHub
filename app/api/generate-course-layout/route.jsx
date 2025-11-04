@@ -3,6 +3,7 @@ import { coursesTable } from '@/config/schema';
 import { getGeminiResponse } from '@/lib/geminiClient';
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from 'next/server';
+import { safeLLMJsonParse } from "@/utils/parseLLMJson";
 
 const PROMPT = `Generate Learning Course based on the following details. Format as JSON only.
 Schema: {
@@ -71,10 +72,9 @@ export async function POST(req) {
     try {
       // Fix: Remove trailing comma and any non-JSON text from the raw Gemini response.
       const cleaned = rawText.replace(/```json|```/g, "").trim();
-      const fixedJson = cleaned.replace(/,\s*}/g, '}')
-                                  .replace(/,\s*]/g, ']');
 
-      courseJson = JSON.parse(fixedJson);
+
+      courseJson = safeLLMJsonParse(cleaned);
     } catch (parseErr) {
       console.error("Failed to parse Gemini response JSON:", parseErr.message);
       console.error("Raw Gemini text:", rawText);

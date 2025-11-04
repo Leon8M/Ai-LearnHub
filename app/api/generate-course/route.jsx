@@ -9,6 +9,7 @@ import { db } from "@/config/db";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@clerk/nextjs/server";
 import axios from "axios";
+import { safeLLMJsonParse } from "@/utils/parseLLMJson";
 
 const PROMPT = `(
 Respond strictly in minified JSON format only, without markdown code blocks or comments.
@@ -70,17 +71,11 @@ export async function POST(request) {
 
         let cleaned = rawText;
 
-        const jsonMatch = cleaned.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch && jsonMatch[1]) {
-            cleaned = jsonMatch[1];
-        }
-        
         cleaned = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+        const parsed = safeLLMJsonParse(cleaned);
+        const youtubeVideos = await getYoutubeVideos(parsed.chapterName || chapter.chapterName);
 
-        const parsedContent = JSON.parse(cleaned);
-        const youtubeVideos = await getYoutubeVideos(parsedContent.chapterName || chapter.chapterName);
-
-        return { status: "fulfilled", value: { youtubeVideos, courseData: parsedContent } };
+        return { status: "fulfilled", value: { youtubeVideos, courseData: parsed } };
       } catch (error) {
         console.error("JSON/Chapter generation failed for chapter:", chapter.chapterName, "Error:", error.message);
         return { status: "rejected", reason: `Chapter generation failed: ${error.message}` };
