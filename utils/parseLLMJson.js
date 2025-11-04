@@ -1,52 +1,75 @@
 export function safeLLMJsonParse(raw) {
     try {
-        let text = raw;
+        // ✅ First attempt: strict parsing on cleaned raw
+        return strictParse(raw);
+    } catch (err1) {
+        console.warn("Strict parse failed → applying fallback repairs...");
 
-        // 1. Extract JSON inside triple backticks if present
-        const match = text.match(/```json\s*([\s\S]*?)\s*```/i);
-        if (match) text = match[1];
-
-        // 2. Remove control characters
-        text = text.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
-
-        // 3. Remove leading/trailing non-JSON text
-        const firstBrace = Math.min(
-            ...["{", "["].map(c => text.indexOf(c)).filter(i => i >= 0)
-        );
-        const lastBrace = Math.max(
-            text.lastIndexOf("}"),
-            text.lastIndexOf("]")
-        );
-        text = text.substring(firstBrace, lastBrace + 1);
-
-        // 4. Strip trailing commas inside objects/arrays
-        text = text.replace(/,\s*}/g, "}");
-        text = text.replace(/,\s*]/g, "]");
-
-        // 5. Replace smart quotes with normal quotes
-        text = text
+        // ✅ Fallback 1 — repair common LLM issues
+        const repaired = raw
+            // remove backticks & code fences
+            .replace(/```(?:json)?/gi, "")
+            // remove control characters
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+            // undefined → null
+            .replace(/\bundefined\b/gi, "null")
+            .replace(/\bNaN\b/g, "null")
+            // escape illegal quotes inside HTML tags
+            .replace(/<([^>"]*)"([^>"]*)>/g, (m) => m.replace(/"/g, "'"))
+            // convert smart quotes
             .replace(/[“”]/g, '"')
-            .replace(/[‘’]/g, "'");
+            .replace(/[‘’]/g, "'")
+            // remove JS comments
+            .replace(/\/\/.*$/gm, "")
+            .replace(/\/\*[\s\S]*?\*\//gm, "")
+            // wrap unquoted keys
+            .replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
+            // remove trailing commas
+            .replace(/,\s*([}\]])/g, "$1")
+            // attempt to ensure JSON starts/ends cleanly
+            .replace(/^[\s\S]*?({|\[)/, "$1")
+            .replace(/(}|\])[\s\S]*$/, "$1");
 
-        // 6. Wrap unquoted keys — extremely common LLM issue
-        text = text.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":');
+        try {
+            return strictParse(repaired);
+        } catch (err2) {
+            console.warn("Fallback parse also failed → applying LAST RESORT loose fix...");
 
-        // 7. Remove comments (// or /* */)
-        text = text.replace(/\/\/.*$/gm, "");
-        text = text.replace(/\/\*[\s\S]*?\*\//gm, "");
+            // ✅ Fallback 2 — last resort: escape any remaining unescaped "
+            let loose = repaired.replace(
+                /"(.*?)":\s*"([^"]*?)"([^,}])/g,
+                (m, a, b, c) => `"${a}":"${b.replace(/"/g, "'")}"${c}`
+            );
 
-        // 8. Remove undefined or NaN
-        text = text.replace(/\bundefined\b/g, 'null');
-        text = text.replace(/\bNaN\b/g, 'null');
-
-        // 9. Ensure valid JSON by enforcing correct quotes around strings
-        text = text.replace(/:\s*'([^']*)'/g, ':"$1"');
-
-        // Final parse
-        return JSON.parse(text);
-
-    } catch (error) {
-        console.error("❌ JSON Parse Error:", error, raw);
-        throw new Error("Failed to parse AI response as JSON.");
+            return JSON.parse(loose);
+        }
     }
+}
+
+
+
+/* ------------------------------------------
+   ✅ STRICT PARSER (primary engine)
+------------------------------------------- */
+function strictParse(txt) {
+    let text = txt;
+
+    // extract JSON between first { or [ and last } or ]
+    const start = Math.min(
+        ...["{", "["].map(ch => text.indexOf(ch)).filter(i => i >= 0)
+    );
+    const end = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
+
+    if (start === -1 || end === -1) {
+        throw new Error("No JSON object found.");
+    }
+
+    const sliced = text.slice(start, end + 1);
+
+    // strip trailing commas
+    const clean = sliced
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]");
+
+    return JSON.parse(clean);
 }

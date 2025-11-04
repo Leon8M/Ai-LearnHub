@@ -6,18 +6,20 @@ import { NextResponse } from 'next/server';
 import { safeLLMJsonParse } from "@/utils/parseLLMJson";
 
 const PROMPT = `
-You MUST respond with STRICT valid JSON.
-- No markdown
-- No code fences
-- No comments
-- No additional text before or after JSON
-- No trailing commas
-- No newlines outside JSON
-- Strings must use double quotes
-- Escape every quote inside strings
+You MUST respond with VALID JSON ONLY.
+RULES (read carefully):
+- NO explanation.
+- NO markdown.
+- NO code fences.
+- NO text outside the JSON object.
+- NO trailing commas.
+- Strings MUST use double quotes.
+- Escape ALL quotes inside strings.
+- HTML tags ARE allowed but must be fully escaped and valid inside JSON strings.
+- If you are uncertain, return "{}".
 
-Respond ONLY with the JSON.  
-If you cannot produce valid JSON, respond with "{}".
+Respond ONLY with the JSON. 
+Respond srictly in the following format. 
 
 Schema: {
   "course": {
