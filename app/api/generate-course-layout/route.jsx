@@ -5,7 +5,20 @@ import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from 'next/server';
 import { safeLLMJsonParse } from "@/utils/parseLLMJson";
 
-const PROMPT = `Generate Learning Course based on the following details. Format as JSON only.
+const PROMPT = `
+You MUST respond with STRICT valid JSON.
+- No markdown
+- No code fences
+- No comments
+- No additional text before or after JSON
+- No trailing commas
+- No newlines outside JSON
+- Strings must use double quotes
+- Escape every quote inside strings
+
+Respond ONLY with the JSON.  
+If you cannot produce valid JSON, respond with "{}".
+
 Schema: {
   "course": {
     "name": "string",
@@ -24,7 +37,9 @@ Schema: {
     ]
   }
 }
-User Input:`;
+
+User Input:
+`;
 
 export async function POST(req) {
   // --- TEMPORARY DEBUGGING START ---

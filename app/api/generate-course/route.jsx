@@ -69,10 +69,7 @@ export async function POST(request) {
 
         if (!rawText) throw new Error("Empty Gemini response");
 
-        let cleaned = rawText;
-
-        cleaned = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
-        const parsed = safeLLMJsonParse(cleaned);
+        const parsed = safeLLMJsonParse(rawText);
         const youtubeVideos = await getYoutubeVideos(parsed.chapterName || chapter.chapterName);
 
         return { status: "fulfilled", value: { youtubeVideos, courseData: parsed } };
