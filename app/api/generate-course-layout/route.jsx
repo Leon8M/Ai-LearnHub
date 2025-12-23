@@ -6,20 +6,21 @@ import { NextResponse } from 'next/server';
 import { safeLLMJsonParse } from "@/utils/parseLLMJson";
 
 const PROMPT = `
-You MUST respond with VALID JSON ONLY.
-RULES (read carefully):
-- NO explanation.
-- NO markdown.
-- NO code fences.
-- NO text outside the JSON object.
-- NO trailing commas.
-- Strings MUST use double quotes.
-- Escape ALL quotes inside strings.
-- HTML tags ARE allowed but must be fully escaped and valid inside JSON strings.
-- If you are uncertain, return "{}".
+You are a JSON generator. Your ONLY job is to respond with a single, perfectly-formed JSON object.
+Follow these rules with extreme care:
 
-Respond ONLY with the JSON. 
-Respond srictly in the following format. 
+**ABSOLUTE RULES:**
+1.  **JSON ONLY:** Your entire response must be a single JSON object. Do NOT include any text, explanations, or markdown like \`\`\`json before or after the JSON.
+2.  **VALID SYNTAX:** No trailing commas. All strings must use double quotes ("").
+3.  **ESCAPE CHARACTERS:** This is the most important rule. You MUST escape all special characters within string values.
+    - Escape all double quotes (") with a backslash (\\").
+    - Escape all backslashes (\\) with another backslash (\\\\).
+    - Escape newlines (\\n), tabs (\\t), etc.
+    **Example of correctly escaped string:**
+    { "content": "This string has a \\"quote\\" and a \\\\ backslash." }
+
+**SCHEMA:**
+Respond srictly in the following format. Do not add or remove fields.
 
 Schema: {
   "course": {
@@ -39,6 +40,8 @@ Schema: {
     ]
   }
 }
+
+If you cannot generate a valid response based on the user input, return an empty JSON object: {}.
 
 User Input:
 `;

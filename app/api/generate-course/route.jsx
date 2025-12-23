@@ -11,18 +11,40 @@ import { getAuth } from "@clerk/nextjs/server";
 import axios from "axios";
 import { safeLLMJsonParse } from "@/utils/parseLLMJson";
 
-const PROMPT = `(
-Respond strictly in minified JSON format only, without markdown code blocks or comments.
-Avoid HTML tags inside string values. Escape all special characters properly)
-Depends on Chapter name and Topic Generate content for each topic in HTML and give response in JSON format.
-Schema:{
-chapterName:<>,
+const PROMPT = `
+You are an expert content generator. Your task is to generate the educational content for a specific chapter and its topics.
+You MUST follow these rules perfectly:
+
+**ABSOLUTE RULES:**
+1.  **JSON ONLY:** Your entire response MUST be a single, valid JSON object. Do NOT include any text, explanations, or markdown like \`\`\`json before or after the JSON.
+2.  **VALID SYNTAX:** No trailing commas. All strings must use double quotes ("").
+3.  **HTML FOR CONTENT:** The 'content' field MUST be a string containing rich HTML. You can use tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, etc.
+4.  **ESCAPE CHARACTERS:** This is the most important rule. You MUST escape all special characters within all string values, especially the 'content' field.
+    - Escape all double quotes (") with a backslash (\\").
+    - Escape all backslashes (\\) with another backslash (\\\\).
+    - Convert all newlines to \\n.
+    **Example of a correctly escaped 'content' string:**
+    "content": "<h2>Topic Title</h2><p>This paragraph contains a \\"quoted phrase\\" and a file path C:\\\\Users\\\\Test.</p>"
+
+**JSON SCHEMA:**
+Your response must be a single JSON object matching this structure exactly:
+
 {
-topic: <>,
-content: <>
+  "chapterName": "string",
+  "topics": [
+    {
+      "topic": "string",
+      "content": "string (contains HTML)"
+    }
+  ]
 }
-}
-: User Input:
+
+**CONTEXT FROM USER INPUT:**
+The user will provide the chapter details. You should use the 'chapterName' from the input to populate the 'chapterName' field in your response. Then, for each topic in the input, generate the HTML content.
+
+If you cannot generate content, return an empty object: {}.
+
+User Input (do not repeat this in your response):
 `;
 
 export async function POST(request) {
