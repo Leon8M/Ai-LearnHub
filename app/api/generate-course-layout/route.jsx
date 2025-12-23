@@ -106,8 +106,12 @@ export async function POST(req) {
     // The `bannerImagePrompt` from `courseJson` is no longer used for API calls.
 
     // --- Step 3: Insert into Database ---
+    // Extract AI-generated description, with a fallback to the user's input.
+    const aiDescription = courseJson?.course?.description || formData.description;
+
     await db.insert(coursesTable).values({
       ...formData,
+      description: aiDescription, // Override with AI-generated description
       courseJson: JSON.stringify(courseJson),
       userEmail: user.primaryEmailAddress.emailAddress,
       cid: courseId,
