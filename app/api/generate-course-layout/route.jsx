@@ -107,7 +107,7 @@ export async function POST(req) {
 
     // --- Step 3: Insert into Database ---
     // Extract AI-generated description, with a fallback to the user's input.
-    const aiDescription = courseJson?.course?.description || formData.description;
+    const aiDescription = courseJson?.course?.description;
 
     await db.insert(coursesTable).values({
       ...formData,
