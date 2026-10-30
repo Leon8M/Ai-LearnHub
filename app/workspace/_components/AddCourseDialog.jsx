@@ -291,7 +291,7 @@ function AddCourseDialog({ children }) {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
+                    <PopoverContent className="pointer-events-auto w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
                       <Command className="bg-[var(--popover)]">
                         <CommandInput
                           placeholder="Search or add category..."
