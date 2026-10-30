@@ -43,16 +43,14 @@ function MainHeader({ hideSide = false, courseId }) {
 
     fetchTokens();
 
-    let intervalId;
-    if (isLoaded && isSignedIn) {
-      intervalId = setInterval(() => {
-        fetchTokens();
-      }, 1000); 
-    }
+    // Refresh when something changes the balance (purchase, claim, generation) or the tab regains
+    // focus. This replaced a once-per-second poll that kept the database awake around the clock
+    // and could exhaust Clerk's API rate limit with a few open tabs.
+    window.addEventListener('kamusi:tokens-changed', fetchTokens);
+    window.addEventListener('focus', fetchTokens);
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      window.removeEventListener('kamusi:tokens-changed', fetchTokens);
+      window.removeEventListener('focus', fetchTokens);
     };
   }, [user, isLoaded, isSignedIn]);
 

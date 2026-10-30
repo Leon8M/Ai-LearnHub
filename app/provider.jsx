@@ -20,50 +20,20 @@ export function Provider({ children }) {
     }
 
     if (isLoaded && user && !hasAttemptedSyncForSession.current) {
-      const clerkId = user.id;
-      const email = user.primaryEmailAddress?.emailAddress;
-      const fullName = user.fullName || user.username;
-
-      const hasRequiredUserData =
-        clerkId &&
-        email && email.trim() !== '' && 
-        fullName && fullName.trim() !== '';
-
-      if (hasRequiredUserData) {
-        console.log("Provider: User data ready. Initiating sync attempt for:", { clerkId, email, fullName });
-
-        hasAttemptedSyncForSession.current = true;
-
-        const debounceTime = 150;
-        const timer = setTimeout(() => {
-          syncUserToDatabase(clerkId, email, fullName);
-        }, debounceTime);
-
-        return () => clearTimeout(timer);
-      } else {
-        console.warn("Provider: Clerk user data still incomplete, waiting for full population...", {
-          clerkId: clerkId,
-          fullName: fullName,
-          email: email,
-        });
-      }
+      // The server reads identity from the Clerk session; nothing is sent in the body. (Users with
+      // no full name, e.g. email-only sign-ups, used to be skipped here and never got a row.)
+      hasAttemptedSyncForSession.current = true;
+      syncUserToDatabase();
     }
   }, [user, isLoaded, isSignedIn]);
 
-  const syncUserToDatabase = async (clerkId, email, fullName) => {
+  const syncUserToDatabase = async () => {
     try {
-      const result = await axios.post('/api/user', {
-        id: clerkId,     
-        fullName: fullName, 
-        emailAddresses: [{ emailAddress: email }],
-      });
-      console.log("Provider: User sync successful, received:", result.data);
-      setUserDetail(result.data.user); // Assuming your API returns { success: true, user: {...} }
+      const result = await axios.post('/api/user');
+      setUserDetail(result.data.user);
     } catch (error) {
-      console.error("Provider: Error syncing user:", error.response?.data || error.message);
-      if (axios.isAxiosError(error) && error.response?.status !== 409) {
-          hasAttemptedSyncForSession.current = false;
-      }
+      console.error('User sync failed:', error.response?.data?.error || error.message);
+      hasAttemptedSyncForSession.current = false;
     }
   };
 

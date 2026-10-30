@@ -7,19 +7,11 @@ import { Sparkles, BadgeCheck, Gem, Loader2, HandCoins, CreditCard } from "lucid
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { useUser } from '@clerk/nextjs';
+import { TOKEN_PACKAGES as PACKAGES, WEEKLY_TOKEN_AMOUNT } from '@/lib/tokenPackages';
 
-const PaystackPop = dynamic(() => import('@paystack/inline-js'), { ssr: false });
+const TOKEN_PACKAGES = Object.values(PACKAGES);
 
-const TOKEN_PACKAGES = [
-  { id: 'single', tokens: 1, price: 50, label: 'Buy 1 Token', description: 'Quick top-up for a single course.' },
-  { id: 'starter', tokens: 3, price: 100, label: 'Starter Pack', description: 'Great for getting started with multiple courses.' },
-  { id: 'pro', tokens: 10, price: 250, label: 'Pro Pack', description: 'For serious learners and content creators.' },
-  { id: 'master', tokens: 30, price: 500, label: 'Master Pack', description: 'Unlock extensive learning and creation.' },
-];
-
-const WEEKLY_TOKEN_AMOUNT = 3;
 const DAYS_IN_WEEK = 7;
 
 function EarnTokensContent() {
@@ -30,32 +22,47 @@ function EarnTokensContent() {
   const [purchaseLoading, setPurchaseLoading] = useState(false); 
   const searchParams = useSearchParams();
 
+  // The server is the source of truth for the weekly claim (it used to live in localStorage,
+  // which drifted from the real rule and reset in every new browser).
+  const loadClaimStatus = useCallback(async () => {
+    const res = await fetch('/api/user/tokens');
+    if (!res.ok) return;
+    const data = await res.json();
+    const next = data.nextClaimAt ? new Date(data.nextClaimAt) : null;
+    setLastClaimDate(next ? new Date(next.getTime() - DAYS_IN_WEEK * 24 * 3600 * 1000) : null);
+    setCanClaimWeekly(!next || next <= new Date());
+  }, []);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && user?.id) {
-      const storedDate = localStorage.getItem(`kamusi_lastWeeklyClaim_${user.id}`);
-      if (storedDate) {
-        const lastDate = new Date(storedDate);
-        setLastClaimDate(lastDate);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - DAYS_IN_WEEK);
-        setCanClaimWeekly(lastDate < sevenDaysAgo);
-      } else {
-        setCanClaimWeekly(true);
-      }
+    if (user?.id) loadClaimStatus();
+  }, [user?.id, loadClaimStatus]);
 
-      const status = searchParams.get('status');
-      const purchasedTokens = searchParams.get('tokens');
-      const reference = searchParams.get('reference');
-
-      if (status === 'success' && purchasedTokens && reference) {
-        toast.success(`🎉 Payment initiated successfully for ${purchasedTokens} tokens! Your tokens will be added shortly.`);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } else if (status === 'cancelled') {
-        toast.error("Payment cancelled. No tokens were added.");
-        window.history.replaceState({}, document.title, window.location.pathname);
+  // Back from Paystack checkout: Paystack appends ?reference=... Confirm the payment server-side
+  // so the tokens show up immediately instead of "shortly".
+  useEffect(() => {
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+    if (!reference || !user?.id) return;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    (async () => {
+      const toastId = toast.loading('Confirming your payment...');
+      try {
+        const res = await fetch('/api/paystack-verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reference }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success(`Payment confirmed! ${data.tokensPurchased} tokens added. Balance: ${data.tokens}.`, { id: toastId });
+          window.dispatchEvent(new Event('kamusi:tokens-changed'));
+        } else {
+          toast.error(data.error || 'We could not confirm this payment yet.', { id: toastId });
+        }
+      } catch {
+        toast.error('We could not confirm this payment yet. Your tokens will appear once Paystack confirms it.', { id: toastId });
       }
-    }
-  }, [searchParams, user]);
+    })();
+  }, [searchParams, user?.id]);
 
   const handleClaimWeeklyTokens = async () => {
     if (!user || !user.id) {
@@ -69,18 +76,13 @@ function EarnTokensContent() {
       const res = await fetch("/api/user/claim-weekly-tokens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
       });
       const data = await res.json();
 
       if (data.success) {
         toast.success(`🎉 You've successfully claimed ${WEEKLY_TOKEN_AMOUNT} free tokens!`);
-        const now = new Date();
-        setLastClaimDate(now);
-        setCanClaimWeekly(false);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(`kamusi_lastWeeklyClaim_${user.id}`, now.toISOString());
-        }
+        window.dispatchEvent(new Event('kamusi:tokens-changed'));
+        await loadClaimStatus();
       } else {
         toast.error(data.error || "Failed to claim tokens. Please try again later.");
       }

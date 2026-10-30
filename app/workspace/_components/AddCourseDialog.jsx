@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { v4 as uuidv4 } from "uuid";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 
 import { CATEGORIES } from '@/constants/categories';
+import { LANGUAGES, MAX_CHAPTERS } from '@/lib/validation';
 
 const CHAPTER_OPTIONS = [
   { label: "3 Chapters (Not Complex)", value: 3 },
@@ -49,6 +49,7 @@ function AddCourseDialog({ children }) {
     includeVideo: false,
     difficulty: "",
     category: "",
+    language: "English",
   });
 
   const [selectedChapterOption, setSelectedChapterOption] = useState('');
@@ -69,7 +70,7 @@ function AddCourseDialog({ children }) {
     let chaptersNum = 0;
     if (selectedChapterOption === 'other') {
       chaptersNum = parseInt(customChapters, 10);
-      chaptersNum = isNaN(chaptersNum) ? 0 : chaptersNum;
+      chaptersNum = isNaN(chaptersNum) ? 0 : Math.min(chaptersNum, MAX_CHAPTERS);
     } else if (selectedChapterOption) {
       chaptersNum = parseInt(selectedChapterOption, 10);
     }
@@ -113,18 +114,16 @@ function AddCourseDialog({ children }) {
       return;
     }
 
-    const courseId = uuidv4();
     try {
       setLoading(true);
-      const result = await axios.post("/api/generate-course-layout", {
-        ...formData,
-        courseId,
-      });
+      // The server validates the form and assigns the course id.
+      const result = await axios.post("/api/generate-course-layout", formData);
       router.push("/workspace/edit-course/" + result.data?.courseId);
     } catch (error) {
-      toast.error("Failed to generate course.", {
-        description: "An error occurred. Please try again.",
-        duration: 3000,
+      const data = error.response?.data;
+      toast.error("Couldn't create the course outline.", {
+        description: data?.issues?.[0]?.message || data?.error || "Please try again.",
+        duration: 5000,
       });
     } finally {
       setLoading(false);
@@ -139,6 +138,7 @@ function AddCourseDialog({ children }) {
       includeVideo: false,
       difficulty: "",
       category: "",
+      language: "English",
     });
     setSelectedChapterOption('');
     setCustomChapters('');
@@ -211,6 +211,7 @@ function AddCourseDialog({ children }) {
                       onChange={(e) => setCustomChapters(e.target.value)}
                       className="mt-2 bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]"
                       min="1"
+                      max={MAX_CHAPTERS}
                       required
                     />
                   )}
@@ -222,6 +223,21 @@ function AddCourseDialog({ children }) {
                     onCheckedChange={(checked) => handleInputChange("includeVideo", checked)}
                     className="data-[state=unchecked]:bg-[var(--muted-foreground)] data-[state=checked]:bg-[var(--primary)]"
                   />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-medium text-[var(--foreground)]">Course Language</label>
+                  <Select onValueChange={(val) => handleInputChange("language", val)} value={formData.language}>
+                    <SelectTrigger className="w-full bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] focus:ring-[var(--ring)] focus:border-[var(--primary)]">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
+                      {LANGUAGES.map((lang) => (
+                        <SelectItem key={lang} value={lang} className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]">
+                          {lang}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="font-medium text-[var(--foreground)]">Difficulty Level</label>

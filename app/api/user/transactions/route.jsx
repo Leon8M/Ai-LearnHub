@@ -1,28 +1,23 @@
-import { db } from "@/config/db";
-import { usersTable, tokenTransactionsTable } from "@/config/schema"; 
-import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { desc, eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+import { db } from '@/config/db';
+import { tokenTransactionsTable } from '@/config/schema';
+import { getSessionUser } from '@/lib/auth';
+import { jsonError } from '@/lib/http';
 
-export async function POST(req) {
-  const { email } = await req.json();
-
-  if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
-  }
-
-  const user = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email));
-
-  if (!user.length) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
+/** The caller's own token history. (Previously took any email in the body and returned that user's.) */
+export async function GET() {
+  const user = await getSessionUser();
+  if (!user) return jsonError('Unauthorized', 401);
   const transactions = await db
-    .select()
+    .select({
+      type: tokenTransactionsTable.type,
+      amount: tokenTransactionsTable.amount,
+      createdAt: tokenTransactionsTable.createdAt,
+    })
     .from(tokenTransactionsTable)
-    .where(eq(tokenTransactionsTable.userId, user[0].id));
-
+    .where(eq(tokenTransactionsTable.userId, user.id))
+    .orderBy(desc(tokenTransactionsTable.createdAt))
+    .limit(50);
   return NextResponse.json({ transactions });
 }

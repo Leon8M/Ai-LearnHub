@@ -11,8 +11,6 @@ function EditCourse({viewCourse = false}) {
     const [loading, setLoading] = useState(false);
     const [course, setCourse] = useState(null);
 
-    console.log("Editing course with ID:", courseId);
-
     useEffect(() => {
         GetCourse();
     }, [courseId]) 
@@ -37,7 +35,7 @@ function EditCourse({viewCourse = false}) {
         </div>
       ) : (
         <>
-          <Courseinfo course={course} viewCourse={viewCourse} />
+          <Courseinfo course={course} viewCourse={viewCourse} onChanged={GetCourse} />
           <ChapterTopList course={course} />
         </>
       )}

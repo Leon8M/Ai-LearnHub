@@ -2,7 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { SelectedChapterIndexContext } from '@/context/SelectedChapterIndexContext';
 import axios from 'axios';
-import { CheckCircle, Videotape, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle, Videotape, XCircle, Loader2, AlertCircle, Printer } from 'lucide-react';
+import Quiz from '@/components/Quiz';
 import { useParams } from 'next/navigation';
 import React, { useContext, useState } from 'react';
 import YouTube from 'react-youtube';
@@ -21,6 +22,7 @@ function Content({ courseInfo, refreshData }) {
   const videoData = currentChapterData?.youtubeVideos || [];
   const topics = currentChapterData?.courseData?.topics || [];
   const chapterName = currentChapterData?.courseData?.chapterName || 'Select a chapter';
+  const quiz = currentChapterData?.courseData?.quiz || [];
 
   const isContentRejected = courseContent?.[selectedChapterIndex]?.status === 'rejected';
   const isContentAvailable = currentChapterData && !isContentRejected && topics.length > 0;
@@ -30,7 +32,7 @@ function Content({ courseInfo, refreshData }) {
     try {
       await axios.put('/api/enroll', {
         courseId,
-        completedChapters: JSON.stringify([...completedChapters, selectedChapterIndex]),
+        completedChapters: [...completedChapters, selectedChapterIndex],
       });
       toast.success('Chapter marked as completed!');
       refreshData();
@@ -48,7 +50,7 @@ function Content({ courseInfo, refreshData }) {
       const updated = completedChapters.filter(i => i !== selectedChapterIndex);
       await axios.put('/api/enroll', {
         courseId,
-        completedChapters: JSON.stringify(updated),
+        completedChapters: updated,
       });
       toast.success('Chapter marked as incomplete!');
       refreshData();
@@ -99,6 +101,13 @@ function Content({ courseInfo, refreshData }) {
         <h2 className="text-2xl sm:text-3xl font-bold font-heading text-[var(--foreground)] animate-fade-in">
           {chapterName}
         </h2>
+        <div className="flex items-center gap-2 print:hidden">
+        {isContentAvailable && (
+          <Button variant="outline" onClick={() => window.print()} className="!h-10" title="Print or save this chapter as PDF">
+            <Printer className="w-4 h-4" />
+            <span className="sr-only sm:not-sr-only sm:ml-1">Print / PDF</span>
+          </Button>
+        )}
         {isContentAvailable && (
           !completedChapters.includes(selectedChapterIndex) ? (
             <Button onClick={markChapterAsCompleted} disabled={loading} className="btn-primary !h-10 !text-base">
@@ -126,6 +135,7 @@ function Content({ courseInfo, refreshData }) {
             </Button>
           )
         )}
+        </div>
       </div>
 
       {isContentAvailable ? (
@@ -141,9 +151,7 @@ function Content({ courseInfo, refreshData }) {
               </h3>
               <div
                 dangerouslySetInnerHTML={{ __html: topic?.content }}
-                className="text-sm text-[var(--foreground)] leading-relaxed bg-[var(--card)] border border-[var(--border)] p-4 rounded-lg prose prose-sm max-w-none
-                           prose-headings:text-[var(--foreground)] prose-p:text-[var(--foreground)] prose-li:text-[var(--foreground)] prose-a:text-[var(--primary)]
-                           dark:prose-headings:text-[var(--foreground)] dark:prose-p:text-[var(--foreground)] dark:prose-li:text-[var(--foreground)] dark:prose-a:text-[var(--primary)]"
+                className="lesson text-sm text-[var(--foreground)] bg-[var(--card)] border border-[var(--border)] p-4 rounded-lg"
               />
             </div>
           ))}
@@ -154,7 +162,9 @@ function Content({ courseInfo, refreshData }) {
         </div>
       )}
 
-      <h2 className="text-xl sm:text-2xl font-bold mt-10 mb-4 flex items-center gap-2 text-[var(--foreground)] font-heading">
+      {isContentAvailable && <Quiz key={selectedChapterIndex} questions={quiz} />}
+
+      <h2 className="text-xl sm:text-2xl font-bold mt-10 mb-4 flex items-center gap-2 text-[var(--foreground)] font-heading print:hidden">
         Related Videos <Videotape className="text-[var(--primary)]" />
       </h2>
 

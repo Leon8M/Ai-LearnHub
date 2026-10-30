@@ -1,111 +1,39 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { db } from '@/config/db';
-import { usersTable, tokenTransactionsTable } from '@/config/schema';
-import { eq } from 'drizzle-orm';
+import { isValidSignature, settlePayment } from '@/lib/payments';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export async function POST(req) {
-  const secret = process.env.PAYSTACK_SECRET_KEY; 
-  const signature = req.headers.get('x-paystack-signature');
-
-  if (!signature) {
-    console.error('No Paystack signature found in headers.');
-    return NextResponse.json({ error: 'No signature' }, { status: 400 });
-  }
-
-  const rawBody = await req.text();
-
-  const hash = crypto.createHmac('sha512', secret)
-    .update(rawBody)
-    .digest('hex');
-
-  if (hash !== signature) {
-    console.error('Paystack webhook signature verification failed.');
-    return NextResponse.json({ error: 'Signature verification failed' }, { status: 400 });
+/**
+ * Paystack webhook. Public route (see middleware): authenticity comes from the HMAC signature,
+ * then the transaction is re-verified with Paystack's API before anything is credited.
+ *
+ * Response codes drive Paystack's retries: 200 = done (including duplicates and payments we
+ * deliberately reject), 500 = temporary failure, please retry. Retries are safe because each
+ * reference can only be credited once.
+ */
+export async function POST(request) {
+  const rawBody = await request.text();
+  if (!isValidSignature(rawBody, request.headers.get('x-paystack-signature'))) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
   let event;
   try {
     event = JSON.parse(rawBody);
-  } catch (parseError) {
-    console.error('Failed to parse Paystack webhook body:', parseError);
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
+  if (event?.event !== 'charge.success') return NextResponse.json({ received: true });
 
-  switch (event.event) {
-    case 'charge.success':
-      const data = event.data;
-      console.log('Paystack Charge Success Event:', data.reference);
+  const reference = event.data?.reference;
+  if (!reference) return NextResponse.json({ error: 'Missing reference' }, { status: 400 });
 
-      const userId = data.metadata?.userId;
-      const tokenAmount = parseInt(data.metadata?.tokenAmount, 10);
-      const transactionRef = data.reference; 
-
-      if (!userId || isNaN(tokenAmount)) {
-        console.error('Missing userId or tokenAmount in metadata for transaction:', transactionRef);
-        return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
-      }
-
-      try {
-        const verificationResponse = await fetch(`https://api.paystack.co/transaction/verify/${transactionRef}`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          },
-        });
-        const verificationData = await verificationResponse.json();
-
-        if (!verificationResponse.ok || !verificationData.status || verificationData.data.status !== 'success') {
-          console.error('Paystack transaction verification failed for reference:', transactionRef, verificationData);
-          return NextResponse.json({ error: 'Transaction verification failed' }, { status: 400 });
-        }
-
-        const [dbUser] = await db.select()
-          .from(usersTable)
-          .where(eq(usersTable.subID, userId));
-
-        if (!dbUser) {
-          console.error('User not found in DB for userId:', userId);
-          return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
-
-        const [existingTransaction] = await db.select()
-          .from(tokenTransactionsTable)
-          .where(eq(tokenTransactionsTable.transactionId, transactionRef));
-
-        if (existingTransaction) {
-          console.warn('Duplicate webhook event received for transaction:', transactionRef);
-          return NextResponse.json({ received: true, message: 'Transaction already processed' });
-        }
-
-        const updatedTokens = dbUser.tokens + tokenAmount;
-        await db.update(usersTable)
-          .set({ tokens: updatedTokens })
-          .where(eq(usersTable.id, dbUser.id));
-
-        await db.insert(tokenTransactionsTable).values({
-          userId: dbUser.id,
-          type: 'purchase',
-          amount: tokenAmount,
-          timestamp: new Date().toISOString(),
-          transactionId: transactionRef,
-        });
-
-        console.log(`Successfully awarded ${tokenAmount} tokens to user ${userId} for transaction ${transactionRef}`);
-      } catch (dbError) {
-        console.error('Database update error in Paystack webhook:', dbError);
-        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
-      }
-      break;
-    default:
-      console.log(`Unhandled Paystack event type ${event.event}`);
+  try {
+    const result = await settlePayment(reference);
+    if (result.status === 'rejected' || result.status === 'no_user') {
+      console.error(`[paystack-webhook] ${reference} not credited: ${result.reason ?? result.status}`);
+    }
+    return NextResponse.json({ received: true, status: result.status });
+  } catch (err) {
+    console.error(`[paystack-webhook] ${reference} failed, Paystack will retry:`, err.message);
+    return NextResponse.json({ error: 'Temporary failure' }, { status: 500 });
   }
-
-  return NextResponse.json({ received: true });
 }

@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Info, Users, Zap, Mail, MapPin, Phone, MessageCircle } from 'lucide-react';
+import { SUPPORT_EMAIL } from '@/lib/site';
 
 const HelpAndInfo = () => {
   return (
@@ -93,8 +94,8 @@ const HelpAndInfo = () => {
                 <Mail className="text-[var(--primary)] w-6 h-6 flex-shrink-0" />
                 <div>
                   <p className="text-lg font-semibold text-[var(--foreground)]">Email Us</p>
-                  <a href="mailto:info@denexsoftware.co.ke" className="text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors">
-                    info@denexsoftware.co.ke
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors">
+                    {SUPPORT_EMAIL}
                   </a>
                   <p className="text-sm text-[var(--muted-foreground)] mt-1">For general inquiries and support.</p>
                 </div>

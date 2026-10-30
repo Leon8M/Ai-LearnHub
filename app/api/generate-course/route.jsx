@@ -1,166 +1,136 @@
-import { NextResponse } from "next/server";
-import { getGeminiResponse } from "@/lib/geminiClient";
-import {
-  coursesTable,
-  tokenTransactionsTable,
-  usersTable,
-} from "@/config/schema";
-import { db } from "@/config/db";
-import { eq } from "drizzle-orm";
-import { getAuth } from "@clerk/nextjs/server";
-import axios from "axios";
-import { safeLLMJsonParse } from "@/utils/parseLLMJson";
+import crypto from 'node:crypto';
+import { and, eq, sql } from 'drizzle-orm';
+import { db } from '@/config/db';
+import { coursesTable, enrollmentsTable } from '@/config/schema';
+import { getSessionUser } from '@/lib/auth';
+import { generateChapter, mapWithConcurrency } from '@/lib/courseGeneration';
+import { jsonError, parseBody } from '@/lib/http';
+import { parseJsonField } from '@/lib/json';
+import { refundToken, spendToken } from '@/lib/tokens';
+import { courseIdInput } from '@/lib/validation';
 
-const PROMPT = `
-You are an expert content generator. Your task is to generate the educational content for a specific chapter and its topics.
-You MUST follow these rules perfectly:
+// Up to 10 chapters, a few in parallel; generous headroom for slow or rate-limited providers.
+export const maxDuration = 300;
+const PARALLEL_CHAPTERS = 3;
 
-**ABSOLUTE RULES:**
-1.  **JSON ONLY:** Your entire response MUST be a single, valid JSON object. Do NOT include any text, explanations, or markdown like \`\`\`json before or after the JSON.
-2.  **VALID SYNTAX:** No trailing commas. All strings must use double quotes ("").
-3.  **HTML FOR CONTENT:** The 'content' field MUST be a string containing rich HTML. You can use tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, etc.
-4.  **ESCAPE CHARACTERS:** This is the most important rule. You MUST escape all special characters within all string values, especially the 'content' field.
-    - Escape all double quotes (") with a backslash (\\").
-    - Escape all backslashes (\\) with another backslash (\\\\).
-    - Convert all newlines to \\n.
-    **Example of a correctly escaped 'content' string:**
-    "content": "<h2>Topic Title</h2><p>This paragraph contains a \\"quoted phrase\\" and a file path C:\\\\Users\\\\Test.</p>"
-
-**JSON SCHEMA:**
-Your response must be a single JSON object matching this structure exactly:
-
-{
-  "chapterName": "string",
-  "topics": [
-    {
-      "topic": "string",
-      "content": "string (contains HTML)"
-    }
-  ]
-}
-
-**CONTEXT FROM USER INPUT:**
-The user will provide the chapter details. You should use the 'chapterName' from the input to populate the 'chapterName' field in your response. Then, for each topic in the input, generate the HTML content.
-
-If you cannot generate content, return an empty object: {}.
-
-User Input (do not repeat this in your response):
-`;
-
+/**
+ * Generate the lessons for a course the caller owns, streaming progress as NDJSON:
+ *   {"type":"start","total":6,"tokens":2}
+ *   {"type":"chapter","index":0,"status":"fulfilled","chapterName":"..."}   (one per chapter)
+ *   {"type":"done","fulfilled":6,"failed":0,"refunded":false}
+ *
+ * The first generation costs one token. Retrying only the chapters that failed is free, and if
+ * every chapter of the first generation fails, the token is refunded.
+ */
 export async function POST(request) {
-  const { course, courseName, courseId } = await request.json();
+  const user = await getSessionUser();
+  if (!user) return jsonError('Sign in to generate a course.', 401);
 
-  const { userId: clerkUserId } = getAuth(request);
-  if (!clerkUserId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { data, error } = await parseBody(request, courseIdInput);
+  if (error) return error;
 
-  const [dbUser] = await db
+  const [course] = await db
     .select()
-    .from(usersTable)
-    .where(eq(usersTable.subID, clerkUserId));
+    .from(coursesTable)
+    .where(and(eq(coursesTable.cid, data.courseId), eq(coursesTable.userEmail, user.email)));
+  if (!course) return jsonError('Course not found.', 404);
 
-  if (!dbUser) {
-    return NextResponse.json({ error: "User not found in database." }, { status: 404 });
-  }
+  // Chapters come from the stored outline, never from the request body.
+  const layout = parseJsonField(course.courseJson, null)?.course;
+  if (!layout?.chapters?.length) return jsonError('This course has no outline yet.', 409);
 
-  if (dbUser.tokens < 1) {
-    return NextResponse.json(
-      { error: "You do not have enough tokens to generate this course." },
-      { status: 403 }
-    );
-  }
+  const existing = parseJsonField(course.courseContent, []);
+  const previous = Array.isArray(existing) && existing.length === layout.chapters.length ? existing : [];
+  const todo = layout.chapters.map((_, i) => i).filter((i) => previous[i]?.status !== 'fulfilled');
+  if (todo.length === 0) return jsonError('This course is already fully generated.', 409);
 
-  await db
-    .update(usersTable)
-    .set({ tokens: dbUser.tokens - 1 })
-    .where(eq(usersTable.id, dbUser.id));
-
-  try {
-    const chapterPromises = course?.chapters?.map(async (chapter) => {
-      try {
-        const contents = [
-          {
-            role: "user",
-            parts: [{ text: PROMPT + JSON.stringify(chapter) }],
-          },
-        ];
-
-        const response = await getGeminiResponse(contents);
-        const rawText = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
-        if (!rawText) throw new Error("Empty Gemini response");
-
-        const parsed = safeLLMJsonParse(rawText);
-        const youtubeVideos = await getYoutubeVideos(parsed.chapterName || chapter.chapterName);
-
-        return { status: "fulfilled", value: { youtubeVideos, courseData: parsed } };
-      } catch (error) {
-        console.error("JSON/Chapter generation failed for chapter:", chapter.chapterName, "Error:", error.message);
-        return { status: "rejected", reason: `Chapter generation failed: ${error.message}` };
-      }
-    });
-
-    const results = await Promise.allSettled(chapterPromises);
-
-    const successfulChapters = results
-      .filter((r) => r.status === "fulfilled")
-      .map((r) => r.value);
-    const failedChapters = results.filter((r) => r.status === "rejected");
-
-    if (failedChapters.length > 0) {
-      console.warn('Some chapters failed generation:', failedChapters);
+  const isFirstGeneration = !previous.some((c) => c?.status === 'fulfilled');
+  const reference = `generate:${course.cid}:${crypto.randomUUID()}`;
+  let tokens = null;
+  if (isFirstGeneration) {
+    tokens = await spendToken(user.id, reference);
+    if (tokens === null) {
+      return jsonError('You need 1 token to generate this course. Claim free weekly tokens or buy more.', 402);
     }
+  }
 
-    await db.insert(tokenTransactionsTable).values({
-      userId: dbUser.subID,
-      type: "course_generation",
-      amount: -1,
-      timestamp: new Date().toISOString(),
+  const results = layout.chapters.map((_, i) => previous[i] ?? { status: 'pending' });
+  const encoder = new TextEncoder();
+
+  // Saves are chained so an older snapshot can never overwrite a newer one.
+  let saving = Promise.resolve();
+  const save = () => {
+    const snapshot = results.map((r) => (r.status === 'pending' ? { status: 'rejected', reason: 'Not generated yet.' } : r));
+    saving = saving.then(() =>
+      db.update(coursesTable).set({ courseContent: snapshot }).where(eq(coursesTable.cid, course.cid))
+    );
+    return saving;
+  };
+
+  async function generateAll(send) {
+    await mapWithConcurrency(todo, PARALLEL_CHAPTERS, async (index) => {
+      const chapter = layout.chapters[index];
+      try {
+        const { courseData, youtubeVideos } = await generateChapter({
+          course: { name: course.name, difficulty: course.difficulty },
+          chapter,
+          language: course.language || 'English',
+          includeVideo: Boolean(course.includeVideo),
+        });
+        results[index] = { status: 'fulfilled', value: { courseData, youtubeVideos } };
+      } catch (err) {
+        console.error(`[generate-course] chapter ${index + 1} failed:`, err.message);
+        results[index] = { status: 'rejected', reason: 'The AI could not write this chapter. Use "Retry failed chapters".' };
+      }
+      send({ type: 'chapter', index, status: results[index].status, chapterName: chapter.chapterName });
+      await save();
     });
 
-    await db
-      .update(coursesTable)
-      .set({ courseContent: JSON.stringify(successfulChapters) })
-      .where(eq(coursesTable.cid, courseId));
-
-
-    return NextResponse.json({
-      success: true,
-      courseName,
-      generatedChapters: successfulChapters,
-      failedChaptersCount: failedChapters.length,
-      message: failedChapters.length > 0 ? 'Course generated with some chapter failures.' : 'Course generated successfully.'
-    }, { status: 200 });
-
-  } catch (error) {
-    console.error('An unexpected error occurred during course generation:', error);
-    return NextResponse.json({ error: `Server error during course generation: ${error.message}` }, { status: 500 });
+    const fulfilled = results.filter((r) => r.status === 'fulfilled').length;
+    let refunded = false;
+    if (isFirstGeneration && fulfilled === 0) {
+      await refundToken(user.id, reference);
+      refunded = true;
+    }
+    if (fulfilled > 0) {
+      // The owner is enrolled automatically so "Start learning" works straight away.
+      await db
+        .insert(enrollmentsTable)
+        .values({ cid: course.cid, userEmail: user.email, completedChapters: sql`'[]'::jsonb` })
+        .onConflictDoNothing();
+    }
+    await saving;
+    send({ type: 'done', fulfilled, failed: results.length - fulfilled, refunded });
   }
-}
 
-const YOUTUBE_BASE_URL = "https://www.googleapis.com/youtube/v3/search";
+  const stream = new ReadableStream({
+    async start(controller) {
+      // If the browser disconnects, keep generating and saving; just stop writing to it.
+      const send = (event) => {
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        } catch {
+          /* client went away */
+        }
+      };
 
-async function getYoutubeVideos(topic) {
-  try {
-    const response = await axios.get(YOUTUBE_BASE_URL, {
-      params: {
-        part: "snippet",
-        q: topic,
-        maxResults: 3,
-        type: "video",
-        key: process.env.YOUTUBE_API_KEY,
-      },
-    });
+      send({ type: 'start', total: layout.chapters.length, pending: todo, tokens });
+      try {
+        await generateAll(send);
+      } catch (err) {
+        // Unexpected failure (e.g. the database). Refund if nothing was delivered, and say so.
+        console.error('[generate-course] aborted:', err);
+        const delivered = results.some((r) => r.status === 'fulfilled');
+        const refund = isFirstGeneration && !delivered;
+        if (refund) await refundToken(user.id, reference).catch(() => {});
+        send({ type: 'error', message: 'Generation stopped unexpectedly. Finished chapters were saved.', refunded: refund });
+      } finally {
+        controller.close();
+      }
+    },
+  });
 
-    return response.data.items.map((item) => ({
-      title: item.snippet.title,
-      description: item.snippet.description,
-      thumbnail: item.snippet.thumbnails.default.url,
-      videoId: item.id.videoId,
-    }));
-  } catch (err) {
-    console.error("YouTube API error for topic:", topic, err.message);
-    return [];
-  }
+  return new Response(stream, {
+    headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 }

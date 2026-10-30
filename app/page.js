@@ -14,6 +14,60 @@ const Glow = () => (
   </div>
 );
 
+const DEMO_COURSE = {
+  topic: 'The Renaissance: Art & Innovation',
+  chapters: [
+    'Florence and the Birth of a New Age',
+    'Perspective: How Painters Learned Depth',
+    'Leonardo, Michelangelo and Raphael',
+    'Printing Press: Ideas at Scale',
+    'Legacy: The Renaissance Today',
+  ],
+};
+
+/** Hero demo: the outline appears chapter by chapter, like the real generator. */
+function HeroDemo() {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setShown((n) => (n > DEMO_COURSE.chapters.length + 2 ? 0 : n + 1)), 900);
+    return () => clearInterval(timer);
+  }, []);
+  const done = Math.min(shown, DEMO_COURSE.chapters.length);
+
+  return (
+    <div className="rounded-lg bg-muted p-4 sm:p-5" aria-label="Example course being generated">
+      <div className="mb-3 rounded-md bg-background/70 p-3">
+        <p className="text-xs text-muted-foreground">Topic</p>
+        <p className="font-semibold text-foreground text-sm sm:text-base">{DEMO_COURSE.topic}</p>
+      </div>
+      <ol className="space-y-2">
+        {DEMO_COURSE.chapters.map((chapter, i) => (
+          <li
+            key={chapter}
+            className={`flex items-center gap-2 rounded-md bg-background/70 px-3 py-2 text-sm transition-all duration-500 ${
+              i < done ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-1'
+            }`}
+          >
+            <span
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                i < done ? 'bg-[var(--primary)] text-white' : 'border border-border'
+              }`}
+            >
+              {i < done ? '✓' : i + 1}
+            </span>
+            <span className="truncate">{chapter}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-xs text-muted-foreground">
+        {done < DEMO_COURSE.chapters.length
+          ? `Writing chapter ${done + 1} of ${DEMO_COURSE.chapters.length}...`
+          : 'Course ready: 5 chapters, lessons, videos and quizzes.'}
+      </p>
+    </div>
+  );
+}
+
 const FeatureCard = ({ icon: Icon, title, desc }) => (
   <Card className="p-6 bg-card rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300 hover:-translate-y-1 hover-scale text-center flex flex-col items-center">
     <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center mb-4">
@@ -85,14 +139,14 @@ export default function Home() {
           <p className="text-base md:text-lg text-muted-foreground mb-6 md:mb-8 max-w-xl mx-auto lg:mx-0">
             Stop searching, start learning. Kamusi AI uses artificial intelligence to build structured, personalized courses on any topic you can imagine. Your journey to mastery begins now.
           </p>
-          <div className="flex justify-center lg:justify-start gap-4">
-            <Link href="/workspace">
-              <Button size="lg" className="btn-primary !text-base !h-12 !px-6 sm:!h-14 sm:!px-8"> 
+          <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 sm:gap-4">
+            <Link href="/workspace" className="w-full sm:w-auto">
+              <Button size="lg" className="btn-primary w-full !text-base !h-12 !px-6 sm:!h-14 sm:!px-8"> 
                 Create Your First Course
               </Button>
             </Link>
-            <Link href="/blog-main">
-              <Button size="lg" className="btn-secondary !text-base !h-12 !px-6 sm:!h-14 sm:!px-8"> 
+            <Link href="/blog-main" className="w-full sm:w-auto">
+              <Button size="lg" className="btn-secondary w-full !text-base !h-12 !px-6 sm:!h-14 sm:!px-8"> 
                 Read Our Blog
               </Button>
             </Link>
@@ -101,18 +155,7 @@ export default function Home() {
 
         <div className="lg:w-1/2 w-full mt-8 lg:mt-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <Card className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4 shadow-2xl shadow-secondary/10">
-            <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center p-4">
-                <div className="w-full bg-background/50 rounded-md p-3 mb-3">
-                    <p className="text-xs text-muted-foreground">Topic:</p>
-                    <p className="font-semibold text-foreground text-sm sm:text-base">The Renaissance: Art & Innovation</p> 
-                </div>
-                <div className="w-full bg-background/50 rounded-md p-3 space-y-2">
-                    <div className="w-full h-3 bg-accent rounded-full animate-pulse"></div>
-                    <div className="w-3/4 h-3 bg-accent rounded-full animate-pulse" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-5/6 h-3 bg-accent rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-4">Generating your personalized course...</p>
-            </div>
+            <HeroDemo />
           </Card>
         </div>
       </section>
@@ -122,7 +165,7 @@ export default function Home() {
           <div className="text-center max-w-2xl mx-auto mb-10 md:mb-12"> 
             <h2 className="text-3xl md:text-4xl font-bold font-heading text-foreground">The Smartest Way to Learn with AI</h2> 
             <p className="text-base md:text-md text-muted-foreground mt-3 md:mt-4"> 
-              Kamusi isn't just another search engine. It's a structured learning platform built for deep understanding and long-term retention.
+              Kamusi isn&apos;t just another search engine. It&apos;s a structured learning platform built for deep understanding and long-term retention.
             </p>
           </div>
 
@@ -130,7 +173,7 @@ export default function Home() {
             <FeatureCard
               icon={BrainCircuit}
               title="Intelligent Curriculum Generation"
-              desc="Our AI analyzes millions of sources to design a logical, comprehensive course outline, from core concepts to advanced topics."
+              desc="Describe what you want to learn and get a logical outline that builds from core concepts to advanced topics, in English, Kiswahili and more."
             />
             <FeatureCard
               icon={BookOpen}
@@ -140,7 +183,7 @@ export default function Home() {
             <FeatureCard
               icon={Zap}
               title="Instant & Focused AI Lessons"
-              desc="No more piecing together random tutorials. Get a complete, tailored learning path in seconds and start mastering new skills today."
+              desc="Every chapter comes with clear lessons, a quiz to check your understanding and hand-picked videos, so you learn instead of searching."
             />
           </div>
         </div>
@@ -150,7 +193,7 @@ export default function Home() {
           <div className="container mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-heading text-foreground">Ready to Unleash Your Curiosity?</h2>
             <p className="text-base md:text-lg text-muted-foreground mt-3 md:mt-4 mb-6 md:mb-8 max-w-2xl mx-auto">
-              Join thousands of learners who are turning their interests into expertise. Your first AI-generated course is just a click away.
+              Your first courses are free: new accounts get 3 tokens, plus 3 more every week. Pick a topic and start learning in minutes.
             </p>
             <Link href="/workspace">
               <Button size="lg" className="btn-primary !text-base !h-12 !px-6 sm:!h-14 sm:!px-8"> 

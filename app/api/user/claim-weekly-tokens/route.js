@@ -1,74 +1,20 @@
-import { currentUser } from '@clerk/nextjs/server';
-import { db } from '@/config/db';
-import { usersTable, tokenTransactionsTable } from '@/config/schema';
-import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { getSessionUser } from '@/lib/auth';
+import { jsonError } from '@/lib/http';
+import { claimWeeklyTokens } from '@/lib/tokens';
+import { WEEKLY_TOKEN_AMOUNT } from '@/lib/tokenPackages';
 
-const WEEKLY_TOKEN_AMOUNT = 3;
-const DAYS_IN_WEEK = 7;
+export async function POST() {
+  const user = await getSessionUser();
+  if (!user) return jsonError('Unauthorized', 401);
 
-export async function POST(req) {
-  const user = await currentUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const result = await claimWeeklyTokens(user.id);
+  if (!result.claimed) {
+    const when = result.nextClaimAt ? ` You can claim again after ${result.nextClaimAt.toUTCString()}.` : '';
+    return NextResponse.json(
+      { success: false, error: `You have already claimed this week's tokens.${when}`, nextClaimAt: result.nextClaimAt },
+      { status: 409 }
+    );
   }
-
-  try {
-    const [dbUser] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.subID, user.id));
-
-    if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // --- DEBUG LOGS START ---
-    console.log('--- Debugging lastWeeklyClaimDate ---');
-    console.log('Raw dbUser:', dbUser);
-    console.log('dbUser.lastWeeklyClaimDate:', dbUser.lastWeeklyClaimDate);
-    console.log('Type of dbUser.lastWeeklyClaimDate:', typeof dbUser.lastWeeklyClaimDate);
-    console.log('--- End Debugging ---');
-    // --- DEBUG LOGS END ---
-
-    const lastClaimDate = dbUser.lastWeeklyClaimDate ? new Date(dbUser.lastWeeklyClaimDate) : null;
-    const now = new Date();
-
-    const nextClaimDate = lastClaimDate ? new Date(lastClaimDate) : null;
-    if (nextClaimDate) {
-      nextClaimDate.setDate(nextClaimDate.getDate() + DAYS_IN_WEEK);
-    }
-
-    if (lastClaimDate && now < nextClaimDate) {
-      return NextResponse.json({
-        success: false,
-        error: `You have already claimed your weekly tokens. Please try again after ${nextClaimDate.toLocaleDateString()}.`
-      }, { status: 403 });
-    }
-
-    const updatedTokens = dbUser.tokens + WEEKLY_TOKEN_AMOUNT;
-
-    await db
-      .update(usersTable)
-      .set({
-        tokens: updatedTokens,
-        lastWeeklyClaimDate: now.toISOString(), // Ensure this is stored as ISO string if not already
-      })
-      .where(eq(usersTable.id, dbUser.id));
-
-    await db.insert(tokenTransactionsTable).values({
-      userId: dbUser.id,
-      type: 'weekly_reward',
-      amount: WEEKLY_TOKEN_AMOUNT,
-      timestamp: now.toISOString(),
-      transactionId: `weekly-claim-${user.id}-${now.getTime()}`,
-    });
-
-    console.log(`User ${user.id} successfully claimed ${WEEKLY_TOKEN_AMOUNT} weekly tokens.`);
-    return NextResponse.json({ success: true, tokens: updatedTokens });
-  } catch (error) {
-    console.error('Claim Weekly Tokens Error:', error);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
+  return NextResponse.json({ success: true, amount: WEEKLY_TOKEN_AMOUNT, tokens: result.tokens, nextClaimAt: result.nextClaimAt });
 }

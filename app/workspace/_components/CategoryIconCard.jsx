@@ -124,7 +124,7 @@ const categoryIconMap = {
   'Woodworking': LucideIcons.Axe,
   'Plumbing': LucideIcons.Droplet,
   'Electrical Wiring': LucideIcons.Bolt,
-  'Carpentry': LucideIcons.Saw, // 'Saw' is available, confirmed.
+  'Carpentry': LucideIcons.Hammer, // lucide-react has no 'Saw' icon; it rendered as undefined.
   'Welding': LucideIcons.Flame,
 
   // Default for unrecognized categories
