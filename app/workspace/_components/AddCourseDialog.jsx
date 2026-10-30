@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,15 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkle, Check, ChevronsUpDown, XCircle, PlusCircle } from "lucide-react";
+import { Loader2, Sparkle } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 
-import { CATEGORIES } from '@/constants/categories';
+import CategoryPicker from './CategoryPicker';
 import { LANGUAGES, MAX_CHAPTERS } from '@/lib/validation';
 
 const CHAPTER_OPTIONS = [
@@ -55,16 +53,9 @@ function AddCourseDialog({ children }) {
   const [selectedChapterOption, setSelectedChapterOption] = useState('');
   const [customChapters, setCustomChapters] = useState('');
 
-  const [openCategoryCombobox, setOpenCategoryCombobox] = useState(false);
-  const [categoryInputSearch, setCategoryInputSearch] = useState('');
   
   const [selectedCategories, setSelectedCategories] = useState([]);
 
-  const isSearchMatchingExistingCategory = useMemo(() => {
-    return CATEGORIES.some(cat =>
-      cat.toLowerCase() === categoryInputSearch.toLowerCase().trim()
-    );
-  }, [categoryInputSearch]);
 
   useEffect(() => {
     let chaptersNum = 0;
@@ -84,26 +75,6 @@ function AddCourseDialog({ children }) {
   const handleInputChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
-
-  const handleCategorySelect = useCallback((categoryValue) => {
-    setSelectedCategories((currentCategories) => {
-      const newCategories = new Set(currentCategories);
-      if (newCategories.has(categoryValue)) {
-        newCategories.delete(categoryValue);
-      } else {
-        newCategories.add(categoryValue);
-      }
-      return Array.from(newCategories);
-    });
-    setCategoryInputSearch('');
-  }, []);
-
-  // --- FIXED: Simplified the remove handler to prevent potential stale state issues, I hated this ---
-  const handleRemoveCategory = (categoryToRemove) => {
-    setSelectedCategories((prevSelected) =>
-      prevSelected.filter((c) => c !== categoryToRemove)
-    );
-  };
 
   const onGenerateCourse = async () => {
     if (!formData.name || formData.chapters <= 0 || !formData.difficulty || selectedCategories.length === 0) {
@@ -142,7 +113,6 @@ function AddCourseDialog({ children }) {
     });
     setSelectedChapterOption('');
     setCustomChapters('');
-    setCategoryInputSearch('');
     setSelectedCategories([]);
   }, []);
 
@@ -253,92 +223,10 @@ function AddCourseDialog({ children }) {
                   </Select>
                 </div>
                 
-                {/* --- Category Combobox Section --- */}
+                {/* --- Categories: chosen in their own modal (CategoryPicker) --- */}
                 <div className="flex flex-col gap-2">
-                  <label className="font-medium text-[var(--foreground)]">Category (select multiple or type custom)</label>
-                  <Popover open={openCategoryCombobox} onOpenChange={setOpenCategoryCombobox}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openCategoryCombobox}
-                        className="w-full justify-between bg-[var(--input)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--input)]/80 focus:ring-[var(--ring)] focus:border-[var(--primary)] min-h-[40px] flex-wrap h-auto"
-                      >
-                        <div className="flex flex-wrap gap-1">
-                          {selectedCategories.length > 0 ? (
-                            selectedCategories.map((category) => (
-                              <span
-                                key={category}
-                                className="flex items-center gap-1.5 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-full px-2 py-0.5 text-xs"
-                              >
-                                {category}
-                                <button
-                                  type="button"
-                                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--primary)] focus:ring-[var(--primary-foreground)]"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveCategory(category);
-                                  }}
-                                >
-                                  <XCircle className="w-3.5 h-3.5 cursor-pointer hover:opacity-80" />
-                                </button>
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[var(--muted-foreground)]">Select or add categories...</span>
-                          )}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="pointer-events-auto w-[--radix-popover-trigger-width] p-0 bg-[var(--popover)] border-[var(--border)] text-[var(--popover-foreground)]">
-                      <Command className="bg-[var(--popover)]">
-                        <CommandInput
-                          placeholder="Search or add category..."
-                          value={categoryInputSearch}
-                          onValueChange={setCategoryInputSearch}
-                          className="h-9 bg-[var(--input)] border-b border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
-                        />
-                        <CommandEmpty className="py-4 text-center text-sm text-[var(--muted-foreground)]">
-                          No category found. Type to add a custom one.
-                        </CommandEmpty>
-                        <CommandList 
-                          // --- FIXED: This stops the scroll event from bubbling up to the dialog. tool longer than I would have liked ---
-                          onWheel={(e) => e.stopPropagation()}
-                        >
-                          <CommandGroup>
-                            {CATEGORIES.map((category) => (
-                              <CommandItem
-                                key={category}
-                                value={category}
-                                onSelect={() => handleCategorySelect(category)}
-                                className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer"
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedCategories.includes(category) ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {category}
-                              </CommandItem>
-                            ))}
-                            {categoryInputSearch.trim() && !isSearchMatchingExistingCategory && !selectedCategories.includes(categoryInputSearch.trim()) && (
-                              <CommandItem
-                                key={`custom-add-${categoryInputSearch.trim()}`}
-                                value={categoryInputSearch.trim()}
-                                onSelect={() => handleCategorySelect(categoryInputSearch.trim())}
-                                className="hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] cursor-pointer font-semibold text-[var(--primary)] mt-1"
-                              >
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Add "{categoryInputSearch.trim()}"
-                              </CommandItem>
-                            )}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <label className="font-medium text-[var(--foreground)]">Categories</label>
+                  <CategoryPicker value={selectedCategories} onChange={setSelectedCategories} />
                 </div>
 
                 {/* --- Generate Course Button --- */}
